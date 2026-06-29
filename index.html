@@ -149,6 +149,52 @@
   .kpi-value.neu { color: var(--text); }
   .kpi-delta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
+  /* CLOUD SYNC CARD */
+  .sync-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sync-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .sync-title-wrap { display: flex; align-items: center; gap: 8px; }
+  .sync-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .sync-badge {
+    padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 700;
+  }
+  .sync-badge.active { background: rgba(0, 217, 126, 0.12); color: var(--green); }
+  .sync-badge.inactive { background: rgba(245, 158, 11, 0.12); color: var(--yellow); }
+  .sync-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  
+  .sync-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .sync-box-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sync-box-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px; }
+  .sync-key-display {
+    font-family: monospace; font-size: 16px; font-weight: 700; color: var(--blue);
+    background: rgba(59, 130, 246, 0.08); padding: 8px 12px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sync-input-row { display: flex; gap: 8px; }
+
   /* CHART GRID */
   .chart-grid {
     display: grid;
@@ -221,7 +267,7 @@
   }
   .search-box input::placeholder { color: var(--text-muted); }
 
-  table { width: 100%; border-collapse: collapse; min-width: 800px; }
+  table { width: 100%; border-collapse: collapse; min-width: 850px; }
   thead th {
     font-size: 11px; font-weight: 600; color: var(--text-muted);
     text-transform: uppercase; letter-spacing: 0.5px;
@@ -439,13 +485,12 @@
   .toast.error { border-color: var(--red); background: rgba(240, 62, 62, 0.1); color: #ff6b6b; }
   .toast.success { border-color: var(--green); background: rgba(0, 217, 126, 0.1); color: #51cf66; }
 
-  /* ─── PEMBATALAN BREAKPOINT UNTUK RESPONSIVENESS SKRIN TELEFON (MAX-WIDTH: 768PX) ─── */
+  /* ─── RESPONSIVENESS SKRIN TELEFON (MAX-WIDTH: 768PX) ─── */
   @media (max-width: 768px) {
     .app {
-      flex-direction: column; /* Ubah kedudukan kandungan ke susunan menegak */
+      flex-direction: column;
     }
 
-    /* Tukar fungsi Sidebar menjadi Bar Navigasi Bawah */
     .sidebar {
       position: fixed;
       bottom: 0;
@@ -463,12 +508,10 @@
       box-shadow: 0 -4px 16px rgba(0,0,0,0.45);
     }
 
-    /* Sembunyikan bahagian logo sidebar di telefon bagi menjimatkan ruang */
     .logo {
       display: none;
     }
 
-    /* Reka bentuk butang navigasi bawah yang mesra jari */
     .nav-item {
       flex-direction: column;
       align-items: center;
@@ -492,7 +535,6 @@
       color: var(--blue);
     }
 
-    /* Kandungan utama diubahsuai supaya tidak ditutupi bar navigasi bawah */
     .main {
       padding-bottom: 70px;
     }
@@ -506,7 +548,6 @@
       padding: 16px;
     }
 
-    /* Pengubahsuaian Starting Balance Card di telefon */
     .start-bal-card {
       flex-direction: column;
       align-items: flex-start;
@@ -524,7 +565,10 @@
       flex: 1;
     }
 
-    /* Grid KPI diubah kepada 2 lajur */
+    .sync-action-grid {
+      grid-template-columns: 1fr;
+    }
+
     .kpi-grid {
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
@@ -535,18 +579,15 @@
     .kpi-value {
       font-size: 18px;
     }
-    /* Kad kelima (Best Trade) akan merentasi 2 lajur agar seimbang */
     .kpi-card:last-child {
       grid-column: span 2;
     }
 
-    /* Grid Carta diubah kepada 1 lajur menegak */
     .chart-grid {
       grid-template-columns: 1fr;
       gap: 16px;
     }
 
-    /* Borang Log Trade diubah kepada 1 lajur */
     .form-grid {
       grid-template-columns: 1fr;
     }
@@ -557,7 +598,6 @@
       padding: 16px;
     }
 
-    /* Toast notification dialihkan ke atas sedikit di telefon */
     .toast-container {
       bottom: 85px;
       right: 16px;
@@ -634,6 +674,40 @@
             <button class="btn-edit" id="start-bal-edit-btn" onclick="openEditBal()">
               ✏️ Edit
             </button>
+          </div>
+        </div>
+
+        <!-- CLOUD REAL-TIME SYNC SETTINGS -->
+        <div class="sync-card">
+          <div class="sync-header">
+            <div>
+              <div class="sync-title-wrap">
+                <span class="sync-title">🔄 Multi-Device Cloud Sync</span>
+                <span class="sync-badge inactive" id="sync-status-badge">Offline Mode</span>
+              </div>
+              <div class="sync-desc">Sync your trading data across all of your phones and laptops in real-time.</div>
+            </div>
+          </div>
+          <div class="sync-action-grid">
+            <div class="sync-box-section">
+              <span class="sync-box-title">Your Sync Key</span>
+              <div class="sync-key-display">
+                <span id="sync-key-val">CL-XXXXXX</span>
+                <button class="btn-edit" style="padding: 4px 8px; font-size: 11px;" onclick="copySyncKey()">📋 Copy</button>
+              </div>
+              <div class="sync-desc">Copy this key and paste it on your other devices to connect them.</div>
+            </div>
+            <div class="sync-box-section">
+              <span class="sync-box-title">Connect Another Device</span>
+              <div class="sync-input-row">
+                <input type="text" id="sync-input-key" placeholder="Enter Sync Key here..." style="flex: 1; padding: 8px 12px;" />
+                <button class="btn btn-primary" style="padding: 0 16px; font-size: 12px; height: 38px;" onclick="connectSyncKey()">Connect</button>
+              </div>
+              <div class="sync-desc" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Type in a Sync Key to link to an existing journal.</span>
+                <a href="#" id="disconnect-btn" style="color: var(--red); text-decoration: none; display: none; font-weight: 600;" onclick="disconnectSync()">Disconnect</a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -773,31 +847,175 @@
   <div class="toast" id="toast-notif"></div>
 </div>
 
-<script>
-  // ─── STATE ───────────────────────────────────────────────────────────────
-  let trades = JSON.parse(localStorage.getItem('cryptojournal') || '[]');
-  
-  // Ensure every stored trade record has a unique ID
-  trades.forEach((t, index) => {
-    if (!t.id) {
-      t.id = Date.now() + index;
-    }
-  });
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+  // ─── LOCAL STATE ──────────────────────────────────────────────────────────
+  let trades = JSON.parse(localStorage.getItem('cryptojournal') || '[]');
   let startingBalance = parseFloat(localStorage.getItem('cryptojournal-startbal') || '0');
+  let syncKey = localStorage.getItem('cryptojournal-synckey') || '';
+  
   let direction = 'Long';
   let pieInst = null, lineInst = null;
-  let deleteId = null; // Holds the ID of the record waiting to be deleted
+  let deleteId = null;
 
-  // ─── INIT ────────────────────────────────────────────────────────────────
+  // ─── CLOUD SYNC STATE ─────────────────────────────────────────────────────
+  let db = null;
+  let auth = null;
+  let isCloudConnected = false;
+  let unsubscribeJournal = null;
+
+  // Fallbacks for environment variables
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+  const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+  // Generate a random unique local key if none exists
+  if (!syncKey) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Readable unique key elements
+    let randKey = 'CL-';
+    for (let i = 0; i < 6; i++) {
+      randKey += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    syncKey = randKey;
+    localStorage.setItem('cryptojournal-synckey', syncKey);
+  }
+
+  // ─── FIREBASE INITIALIZATION ──────────────────────────────────────────────
+  if (firebaseConfig) {
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+
+      // Authenticate prior to executing any cloud sync snapshot
+      if (initialAuthToken) {
+        signInWithCustomToken(auth, initialAuthToken)
+          .then((userCredential) => setupSyncListener(userCredential.user))
+          .catch(() => signInAnonymouslyAndSetup());
+      } else {
+        signInAnonymouslyAndSetup();
+      }
+    } catch (e) {
+      console.error("Firebase Initialization Failed:", e);
+      setSyncBadge(false);
+    }
+  } else {
+    // Graceful fallback to pure local storage if config is not present
+    setSyncBadge(false);
+  }
+
+  function signInAnonymouslyAndSetup() {
+    signInAnonymously(auth)
+      .then((userCredential) => setupSyncListener(userCredential.user))
+      .catch((e) => {
+        console.error("Auth failed:", e);
+        setSyncBadge(false);
+      });
+  }
+
+  // ─── SETUP SNAPSHOT SYNC LISTENER ────────────────────────────────────────
+  function setupSyncListener(user) {
+    if (!user || !db) return;
+
+    // Conforming to Rule 1: artifacts/{appId}/public/data/journals/{syncKey}
+    const journalDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'journals', syncKey);
+
+    // Cancel old subscription if swapping keys
+    if (unsubscribeJournal) {
+      unsubscribeJournal();
+    }
+
+    setSyncBadge(true);
+    document.getElementById('sync-key-val').textContent = syncKey;
+    document.getElementById('disconnect-btn').style.display = 'inline-block';
+
+    unsubscribeJournal = onSnapshot(journalDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data();
+        
+        // Merge starting balance and trades from Cloud
+        trades = cloudData.trades || [];
+        startingBalance = typeof cloudData.startingBalance !== 'undefined' ? cloudData.startingBalance : 0;
+        
+        // Retain state locally
+        localStorage.setItem('cryptojournal', JSON.stringify(trades));
+        localStorage.setItem('cryptojournal-startbal', startingBalance);
+
+        render();
+      } else {
+        // Document does not exist in Cloud yet. Publish local data so other connected devices can see it.
+        pushDataToCloud();
+      }
+    }, (error) => {
+      console.error("Snapshot error:", error);
+      showToast("Cloud sync error. Running in offline fallback.", "error");
+      setSyncBadge(false);
+    });
+  }
+
+  // Push local modifications to Firestore
+  async function pushDataToCloud() {
+    if (!auth || !auth.currentUser || !db) return;
+    const journalDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'journals', syncKey);
+    try {
+      await setDoc(journalDocRef, {
+        trades: trades,
+        startingBalance: startingBalance,
+        lastUpdated: Date.now()
+      });
+    } catch (e) {
+      console.error("Error updating cloud:", e);
+    }
+  }
+
+  function setSyncBadge(connected) {
+    isCloudConnected = connected;
+    const badge = document.getElementById('sync-status-badge');
+    if (connected) {
+      badge.textContent = "Live Cloud Synced";
+      badge.className = "sync-badge active";
+    } else {
+      badge.textContent = "Offline Mode";
+      badge.className = "sync-badge inactive";
+    }
+  }
+
+  // ─── APP INIT ─────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     document.getElementById('page-date').textContent =
       now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
     document.getElementById('f-date').value = now.toISOString().split('T')[0];
-    renderStartBal();
+    document.getElementById('sync-key-val').textContent = syncKey;
     render();
   });
+
+  // ─── TRADE SEQUENCE ORDER & CALCULATIONS ─────────────────────────────────
+  function processTrades() {
+    // 1. Sort base array strictly chronologically (Oldest Trade First) to assign permanent numbers
+    trades.sort((a, b) => {
+      const dateComp = a.date.localeCompare(b.date);
+      if (dateComp !== 0) return dateComp;
+      return a.id - b.id; // Secondary sort on created timestamp to resolve same-day transactions
+    });
+
+    // 2. Assign Trade Sequence Numbers (Trade #1, Trade #2...)
+    trades.forEach((t, index) => {
+      t.tradeNo = index + 1;
+    });
+
+    // Save sorted items
+    localStorage.setItem('cryptojournal', JSON.stringify(trades));
+  }
+
+  function calcPnl(t) {
+    if (!t.exit) return null;
+    const mult = t.dir === 'Long' ? 1 : -1;
+    return ((t.exit - t.entry) / t.entry) * mult * 100;
+  }
 
   // ─── NAVIGATION ──────────────────────────────────────────────────────────
   function showPage(name, btn) {
@@ -817,13 +1035,6 @@
     document.querySelector('.dir-opt.' + d.toLowerCase()).classList.add('active');
   }
 
-  // ─── COMPUTE PNL % ───────────────────────────────────────────────────────
-  function calcPnl(t) {
-    if (!t.exit) return null;
-    const mult = t.dir === 'Long' ? 1 : -1;
-    return ((t.exit - t.entry) / t.entry) * mult * 100;
-  }
-
   // ─── TOAST NOTIFICATION ──────────────────────────────────────────────────
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast-notif');
@@ -841,24 +1052,27 @@
     modal.classList.add('open');
   }
 
-  // Tutup Modal Pengesahan
   function closeConfirmModal() {
     const modal = document.getElementById('confirm-modal');
     modal.classList.remove('open');
     deleteId = null;
   }
 
-  document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+  document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
     if (deleteId !== null) {
       trades = trades.filter(t => t.id !== deleteId);
-      save();
+      processTrades();
+      if (isCloudConnected) {
+        await pushDataToCloud();
+      }
+      render();
       showToast('Trade record deleted successfully.', 'success');
     }
     closeConfirmModal();
   });
 
   // ─── ADD TRADE ───────────────────────────────────────────────────────────
-  function addTrade() {
+  async function addTrade() {
     const pair = document.getElementById('f-pair').value.trim().toUpperCase();
     const date = document.getElementById('f-date').value;
     const entry = parseFloat(document.getElementById('f-entry').value);
@@ -873,11 +1087,16 @@
     }
 
     trades.push({ id: Date.now(), pair, dir: direction, date, entry, exit, bal, notes });
-    trades.sort((a, b) => a.date.localeCompare(b.date));
-    save();
+    processTrades();
+    
+    if (isCloudConnected) {
+      await pushDataToCloud();
+    }
+    
     clearForm();
     showToast('Trade saved successfully!', 'success');
     showPage('dashboard', document.querySelectorAll('.nav-item')[0]);
+    render();
   }
 
   function clearForm() {
@@ -889,9 +1108,62 @@
     setDir('Long');
   }
 
-  function save() {
-    localStorage.setItem('cryptojournal', JSON.stringify(trades));
+  // ─── CLOUD CONNECTIONS & UTILITIES ────────────────────────────────────────
+  function copySyncKey() {
+    // conform to local browser sandbox restrictions via fallback
+    const input = document.createElement('input');
+    input.value = syncKey;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showToast("Sync Key copied to clipboard! Paste it on your other devices.", "success");
+  }
+
+  function connectSyncKey() {
+    const targetKey = document.getElementById('sync-input-key').value.trim().toUpperCase();
+    if (!targetKey.startsWith("CL-") || targetKey.length < 8) {
+      showToast("Invalid key format. Ensure it looks like: CL-XXXXXX", "error");
+      return;
+    }
+    syncKey = targetKey;
+    localStorage.setItem('cryptojournal-synckey', syncKey);
+    document.getElementById('sync-input-key').value = '';
+    
+    if (auth && auth.currentUser) {
+      setupSyncListener(auth.currentUser);
+      showToast(`Connecting to Cloud Journal: ${syncKey}...`, "success");
+    } else {
+      showToast("Cannot connect right now. Offline fallback.", "error");
+    }
+  }
+
+  function disconnectSync() {
+    if (unsubscribeJournal) {
+      unsubscribeJournal();
+    }
+    // Revert to a newly generated local session
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let randKey = 'CL-';
+    for (let i = 0; i < 6; i++) {
+      randKey += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    syncKey = randKey;
+    localStorage.setItem('cryptojournal-synckey', syncKey);
+    document.getElementById('sync-key-val').textContent = syncKey;
+    document.getElementById('disconnect-btn').style.display = 'none';
+    
+    // Clear cloud connected local memory
+    trades = [];
+    startingBalance = 0;
+    localStorage.setItem('cryptojournal', '[]');
+    localStorage.setItem('cryptojournal-startbal', '0');
+    
+    if (auth && auth.currentUser) {
+      setupSyncListener(auth.currentUser);
+    }
     render();
+    showToast("Disconnected from shared journal. Created a new local journal.", "success");
   }
 
   // ─── STARTING BALANCE ────────────────────────────────────────────────────
@@ -912,8 +1184,7 @@
     document.getElementById('start-bal-edit-btn').style.display = '';
   }
 
-  // Save Starting Balance
-  function saveStartBal() {
+  async function saveStartBal() {
     const val = parseFloat(document.getElementById('start-bal-input').value);
     if (isNaN(val) || val < 0) { 
       showToast('Please enter a valid starting balance.', 'error'); 
@@ -925,11 +1196,16 @@
     renderStartBal();
     renderKPIs();
     renderLine();
+    
+    if (isCloudConnected) {
+      await pushDataToCloud();
+    }
     showToast('Starting balance updated successfully.', 'success');
   }
 
   // ─── MAIN RENDER PIPELINE ────────────────────────────────────────────────
   function render() {
+    processTrades();
     renderStartBal();
     renderKPIs();
     renderCharts();
@@ -1024,13 +1300,10 @@
     if (!ctx) return;
     if (lineInst) { lineInst.destroy(); lineInst = null; }
 
-    const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+    // Plot chronological curve
+    const labels = startingBalance > 0 ? ['Start', ...trades.map(t => t.date)] : trades.map(t => t.date);
+    const data   = startingBalance > 0 ? [startingBalance, ...trades.map(t => t.bal)] : trades.map(t => t.bal);
 
-    // Prepend starting balance as first data point
-    const labels = startingBalance > 0 ? ['Start', ...sorted.map(t => t.date)] : sorted.map(t => t.date);
-    const data   = startingBalance > 0 ? [startingBalance, ...sorted.map(t => t.bal)] : sorted.map(t => t.bal);
-
-    // Balance change indicator vs starting balance
     const balEl = document.getElementById('balance-change');
     if (data.length >= 2) {
       const from = startingBalance > 0 ? startingBalance : data[0];
@@ -1045,7 +1318,6 @@
       labels.push('Start'); data.push(0);
     }
 
-    // Gradient fill
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 220);
     gradient.addColorStop(0, 'rgba(59,130,246,0.30)');
     gradient.addColorStop(0.5, 'rgba(59,130,246,0.08)');
@@ -1116,11 +1388,15 @@
         <div>Go to "Log Trade" to add your first position.</div>
       </div>`;
     }
-    const rows = (limit ? list.slice(0, limit) : list);
+    
+    // Sort reverse-chronologically for presentation purposes (Newest Trades At Top)
+    const displayList = [...list].reverse();
+    const rows = (limit ? displayList.slice(0, limit) : displayList);
+
     return `<div class="table-responsive">
       <table>
         <thead><tr>
-          <th>Date</th><th>Pair</th><th>Direction</th>
+          <th>Trade #</th><th>Date</th><th>Pair</th><th>Direction</th>
           <th>Entry</th><th>Exit</th>
           <th>Return</th><th>Balance</th><th>Result</th><th>Notes</th><th>Actions</th>
         </tr></thead>
@@ -1134,6 +1410,7 @@
               ? `<td class="${p >= 0 ? 'pos' : 'neg'}">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</td>`
               : `<td style="color:var(--text-muted)">—</td>`;
             return `<tr>
+              <td style="font-weight: 700; color: var(--text-dim);">#${t.tradeNo}</td>
               <td>${t.date}</td>
               <td class="primary">${t.pair}</td>
               <td><span class="badge ${t.dir === 'Long' ? 'badge-long' : 'badge-short'}">${t.dir}</span></td>
@@ -1162,17 +1439,29 @@
   }
 
   function renderRecent() {
-    const sorted = [...trades].sort((a, b) => b.date.localeCompare(a.date));
-    document.getElementById('recent-table-wrap').innerHTML = buildTable(sorted, 5);
+    document.getElementById('recent-table-wrap').innerHTML = buildTable(trades, 5);
   }
 
   function renderHistory() {
     const q = (document.getElementById('search-input')?.value || '').toLowerCase();
-    const sorted = [...trades]
-      .filter(t => !q || t.pair.toLowerCase().includes(q))
-      .sort((a, b) => b.date.localeCompare(a.date));
-    document.getElementById('history-table-wrap').innerHTML = buildTable(sorted, null);
+    const filtered = trades.filter(t => !q || t.pair.toLowerCase().includes(q));
+    document.getElementById('history-table-wrap').innerHTML = buildTable(filtered, null);
   }
+
+  // ─── BIND MODULE FUNCTIONS TO WINDOW OBJECT FOR INLINE EVENTS ─────────────
+  window.showPage = showPage;
+  window.addTrade = addTrade;
+  window.setDir = setDir;
+  window.saveStartBal = saveStartBal;
+  window.openEditBal = openEditBal;
+  window.cancelEditBal = cancelEditBal;
+  window.askDeleteTrade = askDeleteTrade;
+  window.closeConfirmModal = closeConfirmModal;
+  window.clearForm = clearForm;
+  window.renderHistory = renderHistory;
+  window.copySyncKey = copySyncKey;
+  window.connectSyncKey = connectSyncKey;
+  window.disconnectSync = disconnectSync;
 </script>
 </body>
 </html>
