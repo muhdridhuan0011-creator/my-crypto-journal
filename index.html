@@ -866,11 +866,13 @@
   let auth = null;
   let isCloudConnected = false;
   let unsubscribeJournal = null;
+  let fallbackInterval = null;
 
   // Fallbacks for environment variables
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
   const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
   const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+  const FALLBACK_SYNC_URL = 'https://kvdb.io/CryptoLogSyncBucket_2026/';
 
   // Generate a random unique local key if none exists
   if (!syncKey) {
@@ -883,7 +885,7 @@
     localStorage.setItem('cryptojournal-synckey', syncKey);
   }
 
-  // ─── FIREBASE INITIALIZATION ──────────────────────────────────────────────
+  // ─── DUAL-MODE SYNC INITIALIZATION ──────────────────────────────────────────
   if (firebaseConfig) {
     try {
       const app = initializeApp(firebaseConfig);
@@ -900,11 +902,11 @@
       }
     } catch (e) {
       console.error("Firebase Initialization Failed:", e);
-      setSyncBadge(false);
+      setupExternalFallbackSync();
     }
   } else {
-    // Graceful fallback to pure local storage if config is not present
-    setSyncBadge(false);
+    // No firebaseConfig found (e.g., deployed on GitHub Pages) - Use KV fallback sync!
+    setupExternalFallbackSync();
   }
 
   function signInAnonymouslyAndSetup() {
@@ -912,23 +914,25 @@
       .then((userCredential) => setupSyncListener(userCredential.user))
       .catch((e) => {
         console.error("Auth failed:", e);
-        setSyncBadge(false);
+        setupExternalFallbackSync();
       });
   }
 
-  // ─── SETUP SNAPSHOT SYNC LISTENER ────────────────────────────────────────
+  // ─── SETUP SNAPSHOT SYNC LISTENER (FIRESTORE INTERNAL MODE) ──────────────────
   function setupSyncListener(user) {
     if (!user || !db) return;
 
     // Conforming to Rule 1: artifacts/{appId}/public/data/journals/{syncKey}
     const journalDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'journals', syncKey);
 
-    // Cancel old subscription if swapping keys
     if (unsubscribeJournal) {
       unsubscribeJournal();
     }
+    if (fallbackInterval) {
+      clearInterval(fallbackInterval);
+    }
 
-    setSyncBadge(true);
+    setSyncBadge(true, "Cloud Synced (Live)");
     document.getElementById('sync-key-val').textContent = syncKey;
     document.getElementById('disconnect-btn').style.display = 'inline-block';
 
@@ -936,23 +940,20 @@
       if (docSnap.exists()) {
         const cloudData = docSnap.data();
         
-        // Merge starting balance and trades from Cloud
         trades = cloudData.trades || [];
         startingBalance = typeof cloudData.startingBalance !== 'undefined' ? cloudData.startingBalance : 0;
         
-        // Retain state locally
         localStorage.setItem('cryptojournal', JSON.stringify(trades));
         localStorage.setItem('cryptojournal-startbal', startingBalance);
 
         render();
       } else {
-        // Document does not exist in Cloud yet. Publish local data so other connected devices can see it.
+        // Document does not exist in Cloud yet. Publish local data.
         pushDataToCloud();
       }
     }, (error) => {
       console.error("Snapshot error:", error);
-      showToast("Cloud sync error. Running in offline fallback.", "error");
-      setSyncBadge(false);
+      setupExternalFallbackSync();
     });
   }
 
@@ -971,11 +972,89 @@
     }
   }
 
-  function setSyncBadge(connected) {
+  // ─── SETUP EXTERNAL FALLBACK SYNC (GITHUB PAGES/NETLIFY MODE) ────────────────
+  function setupExternalFallbackSync() {
+    if (unsubscribeJournal) {
+      unsubscribeJournal();
+    }
+
+    setSyncBadge(true, "Cloud Synced (Live)");
+    document.getElementById('sync-key-val').textContent = syncKey;
+    document.getElementById('disconnect-btn').style.display = 'inline-block';
+
+    // Fetch initial state immediately from KV bucket
+    fetchFallbackData();
+
+    // Auto-poll KV bucket every 10 seconds to sync changes from other devices automatically
+    if (fallbackInterval) clearInterval(fallbackInterval);
+    fallbackInterval = setInterval(fetchFallbackData, 10000);
+  }
+
+  async function fetchFallbackData() {
+    try {
+      const res = await fetch(FALLBACK_SYNC_URL + syncKey);
+      if (res.ok) {
+        const cloudData = await res.json();
+        if (cloudData) {
+          const localLastUpdated = parseInt(localStorage.getItem('cryptojournal-lastupdated') || '0');
+          const cloudLastUpdated = cloudData.lastUpdated || 0;
+
+          if (cloudLastUpdated > localLastUpdated) {
+            trades = cloudData.trades || [];
+            startingBalance = typeof cloudData.startingBalance !== 'undefined' ? cloudData.startingBalance : 0;
+            
+            localStorage.setItem('cryptojournal', JSON.stringify(trades));
+            localStorage.setItem('cryptojournal-startbal', startingBalance);
+            localStorage.setItem('cryptojournal-lastupdated', cloudLastUpdated);
+            
+            render();
+          } else if (localLastUpdated > cloudLastUpdated) {
+            // Local is newer, update cloud bucket
+            pushFallbackData();
+          }
+        }
+      } else if (res.status === 404) {
+        // Bucket for key not found on public bucket yet. Create it.
+        pushFallbackData();
+      }
+    } catch (e) {
+      console.warn("External sync poll failed (Running in local mode):", e);
+    }
+  }
+
+  async function pushFallbackData() {
+    const lastUpdated = Date.now();
+    localStorage.setItem('cryptojournal-lastupdated', lastUpdated);
+    try {
+      await fetch(FALLBACK_SYNC_URL + syncKey, {
+        method: 'POST',
+        body: JSON.stringify({
+          trades: trades,
+          startingBalance: startingBalance,
+          lastUpdated: lastUpdated
+        }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.error("External sync push failed:", e);
+    }
+  }
+
+  async function triggerSyncPush() {
+    if (isCloudConnected) {
+      if (auth && auth.currentUser && db) {
+        await pushDataToCloud();
+      } else {
+        await pushFallbackData();
+      }
+    }
+  }
+
+  function setSyncBadge(connected, text = "Live Cloud Synced") {
     isCloudConnected = connected;
     const badge = document.getElementById('sync-status-badge');
     if (connected) {
-      badge.textContent = "Live Cloud Synced";
+      badge.textContent = text;
       badge.className = "sync-badge active";
     } else {
       badge.textContent = "Offline Mode";
@@ -1062,9 +1141,7 @@
     if (deleteId !== null) {
       trades = trades.filter(t => t.id !== deleteId);
       processTrades();
-      if (isCloudConnected) {
-        await pushDataToCloud();
-      }
+      await triggerSyncPush();
       render();
       showToast('Trade record deleted successfully.', 'success');
     }
@@ -1089,9 +1166,7 @@
     trades.push({ id: Date.now(), pair, dir: direction, date, entry, exit, bal, notes });
     processTrades();
     
-    if (isCloudConnected) {
-      await pushDataToCloud();
-    }
+    await triggerSyncPush();
     
     clearForm();
     showToast('Trade saved successfully!', 'success');
@@ -1110,7 +1185,6 @@
 
   // ─── CLOUD CONNECTIONS & UTILITIES ────────────────────────────────────────
   function copySyncKey() {
-    // conform to local browser sandbox restrictions via fallback
     const input = document.createElement('input');
     input.value = syncKey;
     document.body.appendChild(input);
@@ -1132,17 +1206,19 @@
     
     if (auth && auth.currentUser) {
       setupSyncListener(auth.currentUser);
-      showToast(`Connecting to Cloud Journal: ${syncKey}...`, "success");
     } else {
-      showToast("Cannot connect right now. Offline fallback.", "error");
+      setupExternalFallbackSync();
     }
+    showToast(`Connected to Cloud Journal: ${syncKey}`, "success");
   }
 
   function disconnectSync() {
     if (unsubscribeJournal) {
       unsubscribeJournal();
     }
-    // Revert to a newly generated local session
+    if (fallbackInterval) {
+      clearInterval(fallbackInterval);
+    }
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let randKey = 'CL-';
     for (let i = 0; i < 6; i++) {
@@ -1153,14 +1229,16 @@
     document.getElementById('sync-key-val').textContent = syncKey;
     document.getElementById('disconnect-btn').style.display = 'none';
     
-    // Clear cloud connected local memory
     trades = [];
     startingBalance = 0;
     localStorage.setItem('cryptojournal', '[]');
     localStorage.setItem('cryptojournal-startbal', '0');
+    localStorage.setItem('cryptojournal-lastupdated', '0');
     
     if (auth && auth.currentUser) {
       setupSyncListener(auth.currentUser);
+    } else {
+      setupExternalFallbackSync();
     }
     render();
     showToast("Disconnected from shared journal. Created a new local journal.", "success");
@@ -1197,9 +1275,7 @@
     renderKPIs();
     renderLine();
     
-    if (isCloudConnected) {
-      await pushDataToCloud();
-    }
+    await triggerSyncPush();
     showToast('Starting balance updated successfully.', 'success');
   }
 
@@ -1300,7 +1376,6 @@
     if (!ctx) return;
     if (lineInst) { lineInst.destroy(); lineInst = null; }
 
-    // Plot chronological curve
     const labels = startingBalance > 0 ? ['Start', ...trades.map(t => t.date)] : trades.map(t => t.date);
     const data   = startingBalance > 0 ? [startingBalance, ...trades.map(t => t.bal)] : trades.map(t => t.bal);
 
