@@ -485,7 +485,7 @@
   .toast.error { border-color: var(--red); background: rgba(240, 62, 62, 0.1); color: #ff6b6b; }
   .toast.success { border-color: var(--green); background: rgba(0, 217, 126, 0.1); color: #51cf66; }
 
-  /* ─── RESPONSIVENESS SKRIN TELEFON (MAX-WIDTH: 768PX) ─── */
+  /* ─── STREAMING_CHUNK:Structuring layout pages and dashboard sections... ─── */
   @media (max-width: 768px) {
     .app {
       flex-direction: column;
@@ -872,7 +872,9 @@
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
   const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
   const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-  const FALLBACK_SYNC_URL = 'https://kvdb.io/CryptoLogSyncBucket_2026/';
+  
+  // MENGGUNAKAN BUCKET ID RASMI & SAH DI KVDB (Fd55uogXyxYdnXJvnyN8Xo)
+  const FALLBACK_SYNC_URL = 'https://kvdb.io/Fd55uogXyxYdnXJvnyN8Xo/';
 
   // Generate a random unique local key if none exists
   if (!syncKey) {
@@ -905,7 +907,7 @@
       setupExternalFallbackSync();
     }
   } else {
-    // No firebaseConfig found (e.g., deployed on GitHub Pages) - Use KV fallback sync!
+    // No firebaseConfig found (deployed on GitHub Pages) - Use KV fallback sync!
     setupExternalFallbackSync();
   }
 
@@ -922,7 +924,6 @@
   function setupSyncListener(user) {
     if (!user || !db) return;
 
-    // Conforming to Rule 1: artifacts/{appId}/public/data/journals/{syncKey}
     const journalDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'journals', syncKey);
 
     if (unsubscribeJournal) {
@@ -1183,7 +1184,6 @@
     setDir('Long');
   }
 
-  // ─── CLOUD CONNECTIONS & UTILITIES ────────────────────────────────────────
   function copySyncKey() {
     const input = document.createElement('input');
     input.value = syncKey;
@@ -1194,14 +1194,22 @@
     showToast("Sync Key copied to clipboard! Paste it on your other devices.", "success");
   }
 
-  function connectSyncKey() {
+  async function connectSyncKey() {
     const targetKey = document.getElementById('sync-input-key').value.trim().toUpperCase();
     if (!targetKey.startsWith("CL-") || targetKey.length < 8) {
       showToast("Invalid key format. Ensure it looks like: CL-XXXXXX", "error");
       return;
     }
+    
     syncKey = targetKey;
     localStorage.setItem('cryptojournal-synckey', syncKey);
+    
+    // CRITICAL BUG FIX: Reset the local updated timestamp and clear local list 
+    // to force-pull the new key's actual data from the cloud instead of overwriting it!
+    localStorage.setItem('cryptojournal-lastupdated', '0');
+    localStorage.removeItem('cryptojournal');
+    trades = [];
+    
     document.getElementById('sync-input-key').value = '';
     
     if (auth && auth.currentUser) {
@@ -1209,7 +1217,10 @@
     } else {
       setupExternalFallbackSync();
     }
-    showToast(`Connected to Cloud Journal: ${syncKey}`, "success");
+    
+    // Force direct fetch immediately to download the new dataset
+    await fetchFallbackData();
+    showToast(`Successfully connected to Cloud Journal: ${syncKey}`, "success");
   }
 
   function disconnectSync() {
