@@ -112,8 +112,27 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 /* ── CHART ── */
 .chart-sec{padding:20px 24px 0}
 .chart-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
-.chart-wrap{background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:14px}
-svg.chart{width:100%;display:block}
+.chart-wrap{background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:14px;position:relative;overflow:visible;}
+svg.chart{width:100%;display:block;cursor:crosshair;}
+
+/* ── CHART TOOLTIP (HUD) ── */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(17, 19, 24, 0.95);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 12px rgba(0, 229, 255, 0.15);
+  display: none;
+  z-index: 10;
+  transform: translate(-50%, -125%);
+  white-space: nowrap;
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
 
 /* ── PIE CHART ── */
 .pie-sec{padding:20px 24px 0}
@@ -222,7 +241,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="inp-lbl">💰 Starting Capital</div>
         <div class="inp-w">
           <span class="inp-pre">$</span>
-          <input class="ni" id="j-cap" type="number" value="40" min="0.01" step="1" oninput="refreshJournal()">
+          <input class="ni" id="j-cap" type="number" value="40" min="0.01" step="1" oninput="refreshJournal(); saveJ();">
           <span class="inp-suf">USDT</span>
         </div>
         <div class="inp-hint">Modal awal anda</div>
@@ -439,9 +458,15 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     <button class="btn-run" onclick="runSim()">▶ RUN SIMULATION</button>
   </div>
 
-  <div id="s-stats" class="stats-grid" style="display:none"></div>
+  <!-- Equity Curve (Di atas Final Balance/Statistik) -->
+  <div class="chart-sec" id="s-chart" style="display:none">
+    <div class="chart-title">📈 Equity Curve</div>
+    <div class="chart-wrap">
+      <svg class="chart" id="s-svg" viewBox="0 0 900 160" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
 
-  <!-- Pie Charts -->
+  <!-- Pie Charts (Di atas Final Balance/Statistik) -->
   <div class="pie-sec" id="s-pie" style="display:none">
     <div class="chart-title">🥧 Win Rate & P&L Monitor</div>
     <div class="pie-row">
@@ -458,13 +483,10 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <div class="chart-sec" id="s-chart" style="display:none">
-    <div class="chart-title">📈 Equity Curve</div>
-    <div class="chart-wrap">
-      <svg class="chart" id="s-svg" viewBox="0 0 900 160" preserveAspectRatio="none"></svg>
-    </div>
-  </div>
+  <!-- Final Balance & Statistics Grid -->
+  <div id="s-stats" class="stats-grid" style="display:none"></div>
 
+  <!-- Trade Log Table -->
   <div class="tbl-sec" id="s-tbl" style="display:none">
     <div class="chart-title">📋 Trade Log</div>
     <div class="tbl-wrap">
@@ -523,9 +545,23 @@ function switchTab(t){
 let jTrades = [];
 let selOutcome = 'WIN';
 
-function saveJ(){ try{ localStorage.setItem('csj_v2',JSON.stringify(jTrades)); }catch(e){} }
+function saveJ(){ 
+  try{ 
+    localStorage.setItem('csj_v2',JSON.stringify(jTrades)); 
+    localStorage.setItem('cs_j_cap', document.getElementById('j-cap').value);
+  }catch(e){} 
+}
 function loadJ(){
-  try{ const d=localStorage.getItem('csj_v2'); if(d) jTrades=JSON.parse(d); }catch(e){ jTrades=[]; }
+  try{ 
+    const d=localStorage.getItem('csj_v2'); 
+    if(d) jTrades=JSON.parse(d); 
+  }catch(e){ jTrades=[]; }
+  try{
+    const savedJCap = localStorage.getItem('cs_j_cap');
+    if(savedJCap !== null) {
+      document.getElementById('j-cap').value = savedJCap;
+    }
+  }catch(e){}
 }
 
 function gv(id){ const v=parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
@@ -687,7 +723,7 @@ function refreshJournal(){
     // Note
     document.getElementById('j-note-box').innerHTML=`
       <strong>Journal:</strong> ${n} trades · ${wins}W ${losses}L · ${(wins/n*100).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
-      <span style="color:#3a4455">💡 Klik perdagangan untuk maklumat terperinci · Gunakan butang di sebelah kanan untuk urusan CSV</span>`;
+      <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti untuk memeriksa prestasi setiap dagangan</span>`;
   }
 
   // Render list
@@ -802,6 +838,11 @@ function updateEV(){
 
 ['s-cap','s-lev','s-wr','s-tp','s-sl','s-n'].forEach(id=>{
   document.getElementById(id).addEventListener('input',()=>{
+    if (id === 's-cap') {
+      try {
+        localStorage.setItem('cs_s_cap', document.getElementById('s-cap').value);
+      } catch(e) {}
+    }
     updateEV();
     const newN=Math.min(500,Math.max(5,Math.round(sv('s-n'))));
     if(newN!==simN){ simN=newN; applyWR(); }
@@ -861,22 +902,15 @@ function runSim(){
   const avgL=losses>0?Math.abs(trades.filter(t=>!t.win).reduce((s,t)=>s+t.pnl,0)/losses):0;
   const actWR=(wins/simN*100).toFixed(1);
 
+  // Paparkan elemen selepas butang run
   ['s-stats','s-pie','s-chart','s-tbl','s-streaks','s-note'].forEach(id=>{
     document.getElementById(id).style.display=id==='s-streaks'?'grid':'block';
   });
 
-  document.getElementById('s-stats').innerHTML=[
-    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                 sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
-    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,            sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
-    {label:'Actual Win Rate', value:`${actWR}%`,                                     sub:`${wins}W / ${losses}L`,            cls:'blue'},
-    {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,                         sub:'From peak equity',                 cls:'red'},
-    {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                          sub:'All-time high',                    cls:'gold'},
-    {label:'Max Win Streak',  value:`${maxWS}`,                                       sub:'Consecutive wins',                 cls:'green'},
-    {label:'Max Loss Streak', value:`${maxLS}`,                                       sub:'Consecutive losses',               cls:'red'},
-    {label:'Avg Win / Loss',  value:`+$${avgW.toFixed(2)}`,                          sub:`Avg Loss: -$${avgL.toFixed(2)}`,   cls:'green'},
-  ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
+  // Lakarkan Keluk Ekuiti
+  drawChart('s-svg',p.CAP,trades.map(t=>t.ba),ret,900,160);
 
-  // Pie Charts for Simulation
+  // Lakarkan Carta Pai untuk Simulasi
   drawPieChart('s-pie-wl', 's-pie-wl-leg', [
     { label: 'Wins', value: wins, color: 'var(--green)', suffix: ' trades', dec: 0 },
     { label: 'Losses', value: losses, color: 'var(--red)', suffix: ' trades', dec: 0 }
@@ -889,7 +923,17 @@ function runSim(){
     { label: 'Gross Loss', value: simGrossLoss, color: 'var(--red)', prefix: '$', dec: 2 }
   ]);
 
-  drawChart('s-svg',p.CAP,trades.map(t=>t.ba),ret,900,160);
+  // Kemas kini papan statistik
+  document.getElementById('s-stats').innerHTML=[
+    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                 sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
+    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,            sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
+    {label:'Actual Win Rate', value:`${actWR}%`,                                     sub:`${wins}W / ${losses}L`,            cls:'blue'},
+    {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,                         sub:'From peak equity',                 cls:'red'},
+    {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                          sub:'All-time high',                    cls:'gold'},
+    {label:'Max Win Streak',  value:`${maxWS}`,                                       sub:'Consecutive wins',                 cls:'green'},
+    {label:'Max Loss Streak', value:`${maxLS}`,                                       sub:'Consecutive losses',               cls:'red'},
+    {label:'Avg Win / Loss',  value:`+$${avgW.toFixed(2)}`,                          sub:`Avg Loss: -$${avgL.toFixed(2)}`,   cls:'green'},
+  ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
   const mDD=maxDD||1;
   document.getElementById('s-tbody').innerHTML=trades.map(t=>{
@@ -914,7 +958,7 @@ function runSim(){
   document.getElementById('s-note').innerHTML=`
     <strong>Setup:</strong> $${p.CAP} · ${p.LEV}x leverage · TP ${(p.TP*100).toFixed(0)}% · SL ${(p.SL*100).toFixed(0)}% · RR ${(p.TP/p.SL).toFixed(2)}:1<br>
     <strong>EV per trade:</strong> ${ev>=0?'+':''}${(ev*100).toFixed(2)}% &nbsp;|&nbsp; <strong>Actual WR:</strong> ${actWR}%<br>
-    <span style="color:#3a4455">💡 Klik mana-mana cell W/L dalam sequence untuk flip manual, pastu RUN balik</span>`;
+    <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti untuk memeriksa prestasi setiap dagangan</span>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -922,19 +966,18 @@ function runSim(){
 // ═══════════════════════════════════════════════
 // ── PIE CHART ────────────────────────────────────────────────
 function drawPieChart(svgId, legId, slices){
-  // slices: [{label, value, color, prefix, suffix}]
   const total = slices.reduce((s,x)=>s+Math.max(0,x.value),0);
   const svgEl = document.getElementById(svgId);
   if(total===0){ svgEl.innerHTML=''; return; }
 
-  const cx=80, cy=80, R=62, iR=38; // donut sizes
+  const cx=80, cy=80, R=62, iR=38; 
   let startAngle = -Math.PI/2;
   let paths='';
 
   slices.forEach(sl=>{
     if(sl.value<=0) return;
     let frac = sl.value/total;
-    if(frac >= 1.0) frac = 0.9999; // Prevents overlapping start/end points which breaks SVG arc rendering
+    if(frac >= 1.0) frac = 0.9999; 
 
     const angle = frac * 2 * Math.PI;
     const endAngle = startAngle + angle;
@@ -950,7 +993,6 @@ function drawPieChart(svgId, legId, slices){
       <title>${sl.label}: ${sl.prefix||''}${sl.value.toFixed(sl.dec||0)}${sl.suffix||''} (${(frac*100).toFixed(1)}%)</title>
     </path>`;
 
-    // segment label if big enough
     if(frac > 0.08){
       const midA = startAngle + angle/2;
       const lR = (R+iR)/2;
@@ -960,7 +1002,6 @@ function drawPieChart(svgId, legId, slices){
     startAngle = endAngle;
   });
 
-  // center label — biggest slice
   const biggest = slices.reduce((a,b)=>b.value>a.value?b:a, slices[0]);
   const bigFrac = biggest.value/total;
   paths+=`
@@ -969,7 +1010,6 @@ function drawPieChart(svgId, legId, slices){
 
   svgEl.innerHTML=paths;
 
-  // legend
   document.getElementById(legId).innerHTML=slices.map(sl=>`
     <div class="pie-leg-item">
       <div class="pie-dot" style="background:${sl.color}"></div>
@@ -978,6 +1018,7 @@ function drawPieChart(svgId, legId, slices){
     </div>`).join('');
 }
 
+// ── DRAW GRAPH & INTERACTION (TOUCH & HOVER) ────────────────────────────────────────────────
 function drawChart(svgId,start,balArr,ret,W,H){
   const PAD=14;
   const bals=[start,...balArr];
@@ -1000,7 +1041,18 @@ function drawChart(svgId,start,balArr,ret,W,H){
   const sy=by(start);
   const final=bals[bals.length-1];
   const uid=svgId.replace('-','');
-  document.getElementById(svgId).innerHTML=`
+
+  // Reka elemen interaktif gred siber
+  const trackerId = svgId + '-tracker';
+  const trackerHTML = `
+    <g id="${trackerId}" style="display: none; pointer-events: none;">
+      <line id="${svgId}-track-line" x1="0" y1="${PAD}" x2="0" y2="${H - PAD}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.8"/>
+      <circle id="${svgId}-track-point" r="6" fill="var(--bg)" stroke="var(--accent)" stroke-width="2.5"/>
+    </g>
+  `;
+
+  const svgEl = document.getElementById(svgId);
+  svgEl.innerHTML=`
     <defs><linearGradient id="g${uid}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${lc}" stop-opacity="0.22"/>
       <stop offset="100%" stop-color="${lc}" stop-opacity="0.01"/>
@@ -1011,7 +1063,132 @@ function drawChart(svgId,start,balArr,ret,W,H){
     <path d="${line}" fill="none" stroke="${lc}" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="${bx(n)}" cy="${by(final)}" r="4" fill="${lc}"/>
     <text x="${bx(n)-4}" y="${by(final)-8}" fill="${lc}" font-size="11" font-family="monospace" text-anchor="end">$${final.toFixed(0)}</text>
-    <text x="${PAD+3}" y="${sy-5}" fill="#ffd600" font-size="9" font-family="monospace" opacity="0.55">$${start.toFixed(0)} start</text>`;
+    <text x="${PAD+3}" y="${sy-5}" fill="#ffd600" font-size="9" font-family="monospace" opacity="0.55">$${start.toFixed(0)} start</text>
+    ${trackerHTML}`;
+
+  // Sediakan Tooltip terapung dinamik dalam pembungkus .chart-wrap
+  const wrap = svgEl.parentElement;
+  let tooltip = wrap.querySelector('.chart-tooltip');
+  if(!tooltip){
+    tooltip = document.createElement('div');
+    tooltip.className = 'chart-tooltip';
+    wrap.appendChild(tooltip);
+    wrap.style.position = 'relative';
+  }
+
+  // Setkan storan data interaksi
+  svgEl.chartData = {
+    start: start,
+    bals: bals,
+    n: n,
+    minB: minB,
+    maxB: maxB,
+    rng: rng,
+    by: by,
+    bx: bx,
+    tooltip: tooltip,
+    trackerId: trackerId,
+    svgId: svgId,
+    isJournal: svgId === 'j-svg'
+  };
+
+  // Daftarkan listener sekali sahaja bagi setiap keluk ekuiti
+  if(!svgEl.dataset.listened) {
+    svgEl.dataset.listened = "true";
+
+    const handleInteraction = (e) => {
+      const data = svgEl.chartData;
+      if(!data) return;
+
+      const rect = svgEl.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      
+      // Hitung koordinat X relatif dalam sistem 900px
+      const xInSvg = ((clientX - rect.left) / rect.width) * 900;
+      if(xInSvg < PAD || xInSvg > 900 - PAD) return;
+
+      const pct = (xInSvg - PAD) / (900 - PAD * 2);
+      let i = Math.round(pct * data.n);
+      i = Math.max(0, Math.min(data.n, i));
+
+      const bal = data.bals[i];
+      const xPos = data.bx(i);
+      const yPos = data.by(bal);
+
+      // Kemas kini HUD tracker dalam SVG
+      const tracker = document.getElementById(data.trackerId);
+      if(tracker) {
+        tracker.style.display = 'block';
+        const lineEl = document.getElementById(data.svgId + '-track-line');
+        const circleEl = document.getElementById(data.svgId + '-track-point');
+        if(lineEl) {
+          lineEl.setAttribute('x1', xPos);
+          lineEl.setAttribute('x2', xPos);
+        }
+        if(circleEl) {
+          circleEl.setAttribute('cx', xPos);
+          circleEl.setAttribute('cy', yPos);
+        }
+      }
+
+      // Kemas kini kedudukan & kandungan HUD Tooltip terapung
+      if(data.tooltip) {
+        data.tooltip.style.display = 'block';
+        const leftPct = (xPos / 900) * 100;
+        const topPct = (yPos / 160) * 100;
+
+        data.tooltip.style.left = `${leftPct}%`;
+        data.tooltip.style.top = `${topPct}%`;
+
+        let content = '';
+        if(data.isJournal && i > 0 && jTrades[i-1]) {
+          const t = jTrades[i-1];
+          const change = ((bal - data.start) / data.start) * 100;
+          const winStr = t.win ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
+          content = `
+            <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}: ${t.pair}</div>
+            <div>Outcome: ${winStr}</div>
+            <div>Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+            <div>ROI: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
+          `;
+        } else if(!data.isJournal && i > 0) {
+          // Simulation data
+          const change = ((bal - data.start) / data.start) * 100;
+          const winVal = seq[i-1];
+          const winStr = winVal ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
+          content = `
+            <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}</div>
+            <div>Outcome: ${winStr}</div>
+            <div>Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+            <div>Return: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
+          `;
+        } else {
+          // Point zero / capital
+          content = `
+            <div style="font-weight:700;color:var(--gold);margin-bottom:3px;font-size:12px;">STARTING CAPITAL</div>
+            <div>Balance: <span style="color:var(--text); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+          `;
+        }
+
+        data.tooltip.innerHTML = content;
+      }
+    };
+
+    const hideTracker = () => {
+      const data = svgEl.chartData;
+      if(!data) return;
+      const tracker = document.getElementById(data.trackerId);
+      if(tracker) tracker.style.display = 'none';
+      if(data.tooltip) data.tooltip.style.display = 'none';
+    };
+
+    // Sensor interaksi sentuhan pintar & tetikus
+    svgEl.addEventListener('mousemove', handleInteraction);
+    svgEl.addEventListener('touchmove', handleInteraction, {passive: true});
+    svgEl.addEventListener('touchstart', handleInteraction, {passive: true});
+    svgEl.addEventListener('mouseleave', hideTracker);
+    svgEl.addEventListener('touchend', hideTracker);
+  }
 }
 
 function renderStreaks(elId,maxWS,maxLS,trades){
@@ -1050,6 +1227,12 @@ function renderStreaks(elId,maxWS,maxLS,trades){
 //  INIT
 // ═══════════════════════════════════════════════
 loadJ();
+try {
+  const savedSCap = localStorage.getItem('cs_s_cap');
+  if (savedSCap !== null) {
+    document.getElementById('s-cap').value = savedSCap;
+  }
+} catch(e) {}
 selectOutcome('WIN');
 document.getElementById('j-date').value=today();
 document.getElementById('j-tlev').value=document.getElementById('j-lev').value;
