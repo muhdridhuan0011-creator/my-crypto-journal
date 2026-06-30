@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CryptoSim — Compound Simulator</title>
+<title>CryptoSim — Compound Simulator & Journal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 :root{
@@ -14,6 +14,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh}
+
 
 /* ── HEADER ── */
 .hdr{background:linear-gradient(135deg,#0d1117,#111827);border-bottom:1px solid var(--border);padding:20px 28px 16px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
@@ -41,6 +42,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
 .grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
+
 
 /* ── INPUT GROUPS ── */
 .inp-g{display:flex;flex-direction:column;gap:5px}
@@ -76,6 +78,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .btn-run{width:100%;background:linear-gradient(135deg,#00e5ff,#0088cc);color:#000;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;padding:14px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 0 20px rgba(0,229,255,0.18);transition:all 0.15s}
 .btn-run:hover{transform:translateY(-1px);box-shadow:0 0 28px rgba(0,229,255,0.28)}
 
+
 /* ── EV BAR ── */
 .ev-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
 .ev-cell{background:var(--surf2);padding:9px 6px;text-align:center}
@@ -109,6 +112,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .stat-sub{font-size:10px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono',monospace}
 .green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}.blue{color:var(--accent)}
 
+
 /* ── CHART ── */
 .chart-sec{padding:20px 24px 0}
 .chart-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
@@ -134,6 +138,94 @@ svg.chart{width:100%;display:block;cursor:crosshair;}
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
+/* Custom cyber highlights for bar charts */
+.bar-group:hover rect {
+  opacity: 1;
+  filter: drop-shadow(0px 0px 4px var(--accent));
+}
+
+/* ── MONTHLY HEATMAP GRID (KOTAK KECIL) ── */
+.monthly-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px;
+}
+@media (max-width: 768px) {
+  .monthly-grid {
+    grid-template-columns: repeat(4, 1fr); /* 4 columns on tablets */
+  }
+}
+@media (max-width: 480px) {
+  .monthly-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on mobile */
+  }
+}
+.month-box {
+  background: var(--surf2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+.month-box:hover {
+  border-color: var(--accent) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.2) !important;
+}
+.month-box .m-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  margin-bottom: 2px;
+}
+.month-box.active-win .m-lbl, .month-box.active-loss .m-lbl {
+  color: var(--text);
+}
+.month-box .m-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Win Shading (Neon Green Intensity) */
+.month-box.m-win-1 {
+  background: rgba(0, 230, 118, 0.05);
+  border-color: rgba(0, 230, 118, 0.2);
+}
+.month-box.m-win-2 {
+  background: rgba(0, 230, 118, 0.15);
+  border-color: rgba(0, 230, 118, 0.4);
+}
+.month-box.m-win-3 {
+  background: rgba(0, 230, 118, 0.28);
+  border-color: var(--green);
+  box-shadow: inset 0 0 10px rgba(0, 230, 118, 0.15);
+}
+
+/* Loss Shading (Neon Red Intensity) */
+.month-box.m-loss-1 {
+  background: rgba(255, 23, 68, 0.05);
+  border-color: rgba(255, 23, 68, 0.2);
+}
+.month-box.m-loss-2 {
+  background: rgba(255, 23, 68, 0.15);
+  border-color: rgba(255, 23, 68, 0.4);
+}
+.month-box.m-loss-3 {
+  background: rgba(255, 23, 68, 0.28);
+  border-color: var(--red);
+  box-shadow: inset 0 0 10px rgba(255, 23, 68, 0.15);
+}
+
 /* ── PIE CHART ── */
 .pie-sec{padding:20px 24px 0}
 .pie-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -146,6 +238,7 @@ svg.pie{overflow:visible;display:block}
 .pie-leg-label{color:var(--dim);font-size:10px;flex:1}
 .pie-leg-val{font-weight:700;font-size:12px}
 .pie-center-text{font-family:'JetBrains Mono',monospace;text-anchor:middle;dominant-baseline:middle}
+
 
 /* ── TABLE ── */
 .tbl-sec{padding:20px 24px 0}
@@ -212,6 +305,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 </style>
 </head>
 <body>
+
 
 <!-- HEADER -->
 <div class="hdr">
@@ -347,13 +441,40 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Chart -->
+  <!-- Equity Curve Chart -->
   <div class="chart-sec" id="j-chart" style="display:none">
     <div class="chart-title">📈 Equity Curve</div>
     <div class="chart-wrap">
       <svg class="chart" id="j-svg" viewBox="0 0 900 160" preserveAspectRatio="none"></svg>
     </div>
   </div>
+
+  <!-- Daily P&L Bar Chart -->
+  <div class="chart-sec" id="j-daily-chart" style="display:none">
+    <div class="chart-title">📊 Prestasi P&L Harian</div>
+    <div class="chart-wrap">
+      <svg class="chart" id="j-daily-svg" viewBox="0 0 900 160" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <!-- NEW FEATURE: Monthly P&L Grid (Kotak Kotak Kecil) -->
+  <div class="chart-sec" id="j-monthly-chart" style="display:none">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <div class="chart-title" style="margin:0">📅 Grid P&L Bulanan</div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="btn btn-outline" id="j-m-prev-yr" onclick="changeMonthlyYear(-1)" style="padding:2px 8px; font-size:10px;"><</button>
+        <span id="j-monthly-year-val" style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--accent);">2026</span>
+        <button class="btn btn-outline" id="j-m-next-yr" onclick="changeMonthlyYear(1)" style="padding:2px 8px; font-size:10px;">></button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="padding:16px;">
+      <div id="j-monthly-grid" class="monthly-grid"></div>
+      <div id="j-monthly-hud" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); text-align:center; min-height:16px;">
+        Lalukan tetikus atau ketik pada kotak bulan untuk butiran lanjut
+      </div>
+    </div>
+  </div>
+
 
   <!-- Trade History -->
   <div style="padding:20px 24px 0">
@@ -486,6 +607,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <!-- Final Balance & Statistics Grid -->
   <div id="s-stats" class="stats-grid" style="display:none"></div>
 
+
   <!-- Trade Log Table -->
   <div class="tbl-sec" id="s-tbl" style="display:none">
     <div class="chart-title">📋 Trade Log</div>
@@ -529,6 +651,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 </div>
 
 <script>
+
 // ═══════════════════════════════════════════════
 //  TAB SWITCH
 // ═══════════════════════════════════════════════
@@ -540,10 +663,14 @@ function switchTab(t){
 }
 
 // ═══════════════════════════════════════════════
-//  JOURNAL STATE
+//  JOURNAL STATE & CONSTANTS
 // ═══════════════════════════════════════════════
 let jTrades = [];
 let selOutcome = 'WIN';
+
+let monthlyActiveYear = new Date().getFullYear();
+let monthlyDataCache = [];
+const monthlyMonthsBMFull = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
 
 function saveJ(){ 
   try{ 
@@ -582,6 +709,7 @@ function selectOutcome(o){
 document.getElementById('j-lev').addEventListener('input',()=>{
   document.getElementById('j-tlev').value=document.getElementById('j-lev').value;
 });
+
 
 function addTrade(){
   const capital=Math.max(0.01,gv('j-cap'));
@@ -667,6 +795,8 @@ function refreshJournal(){
   document.getElementById('j-stats').style.display=show?'grid':'none';
   document.getElementById('j-pie').style.display=show?'block':'none';
   document.getElementById('j-chart').style.display=show?'block':'none';
+  document.getElementById('j-daily-chart').style.display=show?'block':'none'; 
+  document.getElementById('j-monthly-chart').style.display=show?'block':'none'; // NEW: show monthly grid
   document.getElementById('j-streaks').style.display=show?'grid':'none';
   document.getElementById('j-note-box').style.display=show?'block':'none';
   document.getElementById('j-clear-btn').style.display=show?'inline-block':'none';
@@ -692,12 +822,12 @@ function refreshJournal(){
     // Stats
     document.getElementById('j-stats').innerHTML=[
       {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,  sub:`$${capital.toFixed(0)} → $${final.toFixed(2)}`, cls:ret>=0?'green':'red'},
-      {label:'Win Rate',        value:`${(wins/n*100).toFixed(0)}%`,          sub:`${wins}W / ${losses}L`,                          cls:'blue'},
+      {label:'Win Rate',        value:`${(wins/n*100).toFixed(0)}%`,          sub:`${wins}W / ${losses}L`,                         cls:'blue'},
       {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
-      {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                sub:'All-time high',                                  cls:'gold'},
+      {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                 sub:'All-time high',                                  cls:'gold'},
       {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                              cls:'green'},
-      {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                            cls:'red'},
-      {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                sub:`Avg Loss: -$${avgL.toFixed(2)}`,                  cls:'green'},
+      {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                             cls:'red'},
+      {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                 sub:`Avg Loss: -$${avgL.toFixed(2)}`,                   cls:'green'},
       {label:'Total Trades',    value:`${n}`,                                 sub:`${wins} wins · ${losses} losses`,               cls:'blue'},
     ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
@@ -714,8 +844,14 @@ function refreshJournal(){
       { label: 'Gross Loss', value: grossLoss, color: 'var(--red)', prefix: '$', dec: 2 }
     ]);
 
-    // Chart
+    // Equity curve chart
     drawChart('j-svg',capital,comp.map(t=>t.ba),ret,900,160);
+
+    // Draw Daily P&L Bar Chart
+    drawDailyBarChart('j-daily-svg', comp);
+
+    // NEW: Calculate and Render Monthly Grid
+    renderMonthlyGrid();
 
     // Streaks
     renderStreaks('j-streaks',maxWS,maxLS,comp);
@@ -723,7 +859,7 @@ function refreshJournal(){
     // Note
     document.getElementById('j-note-box').innerHTML=`
       <strong>Journal:</strong> ${n} trades · ${wins}W ${losses}L · ${(wins/n*100).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
-      <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti untuk memeriksa prestasi setiap dagangan</span>`;
+      <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti dan bar harian untuk memeriksa prestasi setiap dagangan</span>`;
   }
 
   // Render list
@@ -749,6 +885,118 @@ function refreshJournal(){
       <button class="ti-del" onclick="event.stopPropagation();deleteTrade(${t.id})" title="Delete">🗑</button>
     </div>`;
   }).join('')+'</div>';
+}
+
+// ── NEW HELPER: PROCESS AND RENDER MONTHLY GRID ─────────────────────────────
+function renderMonthlyGrid() {
+  let years = [...new Set(jTrades.map(t => t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear()))];
+  if (years.length === 0) years = [new Date().getFullYear()];
+  years.sort((a, b) => a - b);
+
+  // Auto fallback to latest active year
+  if (!years.includes(monthlyActiveYear)) {
+    monthlyActiveYear = years[years.length - 1];
+  }
+
+  // Render Year selector UI
+  document.getElementById('j-monthly-year-val').textContent = monthlyActiveYear;
+  const currentYearIdx = years.indexOf(monthlyActiveYear);
+  document.getElementById('j-m-prev-yr').style.opacity = currentYearIdx > 0 ? "1" : "0.3";
+  document.getElementById('j-m-prev-yr').style.pointerEvents = currentYearIdx > 0 ? "auto" : "none";
+  document.getElementById('j-m-next-yr').style.opacity = currentYearIdx < years.length - 1 ? "1" : "0.3";
+  document.getElementById('j-m-next-yr').style.pointerEvents = currentYearIdx < years.length - 1 ? "auto" : "none";
+
+  // Group 12 months for selected year
+  const monthsData = Array.from({ length: 12 }, (_, i) => ({
+    monthIdx: i,
+    pnl: 0,
+    count: 0,
+    wins: 0,
+    losses: 0
+  }));
+
+  jTrades.forEach(t => {
+    const tYear = t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear();
+    if (tYear === monthlyActiveYear) {
+      const tMonth = t.date ? parseInt(t.date.substring(5, 7)) - 1 : 0;
+      monthsData[tMonth].pnl += t.pnl;
+      monthsData[tMonth].count++;
+      if (t.win) monthsData[tMonth].wins++;
+      else monthsData[tMonth].losses++;
+    }
+  });
+
+  monthlyDataCache = monthsData; // Keep reference for HUD events
+
+  const activeMonthlyPnls = monthsData.filter(m => m.count > 0).map(m => Math.abs(m.pnl));
+  const maxAbsMonthlyPnl = activeMonthlyPnls.length > 0 ? Math.max(...activeMonthlyPnls) : 1;
+
+  const monthNamesBM = ["JAN", "FEB", "MAC", "APR", "MEI", "JUN", "JUL", "OGO", "SEP", "OKT", "NOV", "DIS"];
+
+  const gridEl = document.getElementById('j-monthly-grid');
+  gridEl.innerHTML = monthsData.map((m, i) => {
+    let intensityClass = "m-none";
+    let textStyle = "var(--dim)";
+    if (m.count > 0) {
+      const ratio = Math.abs(m.pnl) / maxAbsMonthlyPnl;
+      let lvl = 1;
+      if (ratio > 0.65) lvl = 3;
+      else if (ratio > 0.3) lvl = 2;
+
+      if (m.pnl >= 0) {
+        intensityClass = `m-win-${lvl} active-win`;
+        textStyle = "var(--green)";
+      } else {
+        intensityClass = `m-loss-${lvl} active-loss`;
+        textStyle = "var(--red)";
+      }
+    }
+
+    const valueStr = m.count > 0 ? (m.pnl >= 0 ? `+$${m.pnl.toFixed(0)}` : `-$${Math.abs(m.pnl).toFixed(0)}`) : "—";
+
+    return `
+      <div class="month-box ${intensityClass}" 
+           onmouseenter="showMonthlyHUD(${i})" 
+           onmouseleave="clearMonthlyHUD()"
+           ontouchstart="showMonthlyHUD(${i}); event.preventDefault();">
+        <div class="m-lbl">${monthNamesBM[i]}</div>
+        <div class="m-val" style="color:${textStyle};">${valueStr}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── NEW HELPER: INTERACTIVE MONTHLY HUD SENSORS ─────────────────────────────
+function showMonthlyHUD(idx) {
+  const m = monthlyDataCache[idx];
+  const hud = document.getElementById('j-monthly-hud');
+  if (!m || m.count === 0) {
+    hud.innerHTML = `📅 <strong>${monthlyMonthsBMFull[idx]} ${monthlyActiveYear}</strong>: Tiada rekod dagangan harian`;
+    return;
+  }
+  const color = m.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const sign = m.pnl >= 0 ? '+' : '-';
+  const wr = ((m.wins / m.count) * 100).toFixed(0);
+  hud.innerHTML = `📅 <strong>${monthlyMonthsBMFull[idx]} ${monthlyActiveYear}</strong> · P&L Bersih: <span style="color:${color}; font-weight:700;">${sign}$${Math.abs(m.pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> · 💼 Trades: <strong>${m.count}</strong> (${m.wins}W / ${m.losses}L, WR: <strong>${wr}%</strong>)`;
+}
+
+function clearMonthlyHUD() {
+  document.getElementById('j-monthly-hud').innerHTML = `Lalukan tetikus atau ketik pada kotak bulan untuk butiran lanjut`;
+}
+
+function changeMonthlyYear(dir) {
+  let years = [...new Set(jTrades.map(t => t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear()))];
+  if (years.length === 0) years = [new Date().getFullYear()];
+  years.sort((a, b) => a - b);
+
+  let currentIdx = years.indexOf(monthlyActiveYear);
+  if (currentIdx === -1) currentIdx = years.length - 1;
+
+  let nextIdx = currentIdx + dir;
+  if (nextIdx >= 0 && nextIdx < years.length) {
+    monthlyActiveYear = years[nextIdx];
+    refreshJournal();
+  }
 }
 
 function showDetail(id){
@@ -804,6 +1052,7 @@ function exportCSV(){
   a.download='my_trades.csv';
   a.click();
 }
+
 
 // ═══════════════════════════════════════════════
 //  SIMULATOR
@@ -925,13 +1174,13 @@ function runSim(){
 
   // Kemas kini papan statistik
   document.getElementById('s-stats').innerHTML=[
-    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                 sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
+    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                  sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
     {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,            sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
     {label:'Actual Win Rate', value:`${actWR}%`,                                     sub:`${wins}W / ${losses}L`,            cls:'blue'},
     {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,                         sub:'From peak equity',                 cls:'red'},
     {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                          sub:'All-time high',                    cls:'gold'},
     {label:'Max Win Streak',  value:`${maxWS}`,                                       sub:'Consecutive wins',                 cls:'green'},
-    {label:'Max Loss Streak', value:`${maxLS}`,                                       sub:'Consecutive losses',               cls:'red'},
+    {label:'Max Loss Streak', value:`${maxLS}`,                                       sub:'Consecutive losses',                cls:'red'},
     {label:'Avg Win / Loss',  value:`+$${avgW.toFixed(2)}`,                          sub:`Avg Loss: -$${avgL.toFixed(2)}`,   cls:'green'},
   ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
@@ -960,6 +1209,7 @@ function runSim(){
     <strong>EV per trade:</strong> ${ev>=0?'+':''}${(ev*100).toFixed(2)}% &nbsp;|&nbsp; <strong>Actual WR:</strong> ${actWR}%<br>
     <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti untuk memeriksa prestasi setiap dagangan</span>`;
 }
+
 
 // ═══════════════════════════════════════════════
 //  SHARED HELPERS
@@ -1190,6 +1440,196 @@ function drawChart(svgId,start,balArr,ret,W,H){
     svgEl.addEventListener('touchend', hideTracker);
   }
 }
+
+
+// ── DRAW DAILY P&L BAR CHART ──────────────────────────────────────────────
+function drawDailyBarChart(svgId, trades) {
+  if (!trades || trades.length === 0) return;
+
+  // Group trades by date and compute consolidated daily statistics
+  const dailyData = {};
+  trades.forEach(t => {
+    const d = t.date || today();
+    if (!dailyData[d]) {
+      dailyData[d] = { pnl: 0, wins: 0, losses: 0, count: 0 };
+    }
+    dailyData[d].pnl += t.pnl;
+    dailyData[d].count++;
+    if (t.win) dailyData[d].wins++;
+    else dailyData[d].losses++;
+  });
+
+  // Sort dates chronologically
+  const sortedDates = Object.keys(dailyData).sort();
+  const rawChartData = sortedDates.map(d => ({
+    date: d,
+    ...dailyData[d]
+  }));
+
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+
+  const W = 900;
+  const H = 160;
+  const PAD_X = 50; // Extra left margin for clean P&L labels
+  const PAD_Y = 16;
+  const zeroY = H / 2;
+
+  // Find absolute maximum P&L value to scale bar sizes symmetrically around baseline zero
+  let maxAbs = Math.max(...rawChartData.map(d => Math.abs(d.pnl)));
+  if (maxAbs === 0) maxAbs = 1;
+
+  const valToY = val => zeroY - (val / maxAbs) * (zeroY - PAD_Y);
+
+  // Generate background grid lines & labels
+  let grid = '';
+  const gridLevels = [maxAbs, maxAbs / 2, 0, -maxAbs / 2, -maxAbs];
+  gridLevels.forEach(v => {
+    const y = valToY(v);
+    const isZero = Math.abs(v) < 1e-5;
+    const color = isZero ? 'var(--gold)' : '#1f2430';
+    const opacity = isZero ? '0.45' : '1';
+    const dash = isZero ? '4 3' : 'none';
+    
+    grid += `<line x1="${PAD_X}" y1="${y}" x2="${W - 14}" y2="${y}" stroke="${color}" stroke-width="1" stroke-dasharray="${dash}" opacity="${opacity}"/>`;
+    
+    // Grid P&L scale labels
+    const formattedVal = v >= 0 ? `+$${v.toFixed(0)}` : `-$${Math.abs(v).toFixed(0)}`;
+    grid += `<text x="${PAD_X - 8}" y="${y + 3}" fill="#3a4455" font-size="8" font-family="monospace" text-anchor="end">${formattedVal}</text>`;
+  });
+
+  // Compute responsive bar width metrics
+  const totalBars = rawChartData.length;
+  const plottingAreaWidth = W - PAD_X - 14;
+  const stepWidth = plottingAreaWidth / totalBars;
+  const barWidth = Math.max(3, stepWidth * 0.65); // Balanced gap ratio
+
+  let barsHTML = '';
+  rawChartData.forEach((day, i) => {
+    const xPos = PAD_X + i * stepWidth + (stepWidth - barWidth) / 2;
+    const yVal = valToY(day.pnl);
+    const color = day.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    
+    let barY, barHeight;
+    if (day.pnl >= 0) {
+      barY = yVal;
+      barHeight = Math.max(1.5, zeroY - yVal);
+    } else {
+      barY = zeroY;
+      barHeight = Math.max(1.5, yVal - zeroY);
+    }
+
+    // Wrap elements inside styled group, inserting an invisible overlay rect for high-precision pointer tracking
+    barsHTML += `
+      <g class="bar-group" data-idx="${i}">
+        <rect x="${xPos}" y="${barY}" width="${barWidth}" height="${barHeight}" fill="${color}" opacity="0.8" rx="2" style="transition: all 0.2s;" />
+        <rect x="${PAD_X + i * stepWidth}" y="${PAD_Y}" width="${stepWidth}" height="${H - PAD_Y * 2}" fill="transparent" style="cursor: pointer;" />
+      </g>
+    `;
+  });
+
+  // Interactive cyber tracker line indicator
+  const trackerId = svgId + '-tracker';
+  const trackerHTML = `
+    <g id="${trackerId}" style="display: none; pointer-events: none;">
+      <line id="${svgId}-track-line" x1="0" y1="${PAD_Y}" x2="0" y2="${H - PAD_Y}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75"/>
+    </g>
+  `;
+
+  svgEl.innerHTML = grid + barsHTML + trackerHTML;
+
+  // Prepare Floating interactive tooltip HUD
+  const wrap = svgEl.parentElement;
+  let tooltip = wrap.querySelector('.chart-tooltip');
+  if(!tooltip){
+    tooltip = document.createElement('div');
+    tooltip.className = 'chart-tooltip';
+    wrap.appendChild(tooltip);
+    wrap.style.position = 'relative';
+  }
+
+  // Bind compiled layout parameters to element for event retrieval
+  svgEl.chartData = {
+    data: rawChartData,
+    step: stepWidth,
+    padX: PAD_X,
+    zeroY: zeroY,
+    valToY: valToY,
+    tooltip: tooltip,
+    trackerId: trackerId,
+    svgId: svgId
+  };
+
+  // Bind dynamic touch/mouse interactive sensors (ensuring single listeners)
+  if(!svgEl.dataset.listened) {
+    svgEl.dataset.listened = "true";
+
+    const handleInteraction = (e) => {
+      const chart = svgEl.chartData;
+      if (!chart) return;
+
+      const rect = svgEl.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      
+      const xInSvg = ((clientX - rect.left) / rect.width) * 900;
+      if (xInSvg < PAD_X || xInSvg > 900 - 14) return;
+
+      const relativePct = (xInSvg - PAD_X) / (900 - PAD_X - 14);
+      let i = Math.floor(relativePct * chart.data.length);
+      i = Math.max(0, Math.min(chart.data.length - 1, i));
+
+      const dayItem = chart.data[i];
+      const targetX = PAD_X + i * chart.step + chart.step / 2;
+      const targetY = chart.valToY(dayItem.pnl);
+
+      // Render vertical cyber track-line
+      const tracker = document.getElementById(chart.trackerId);
+      if (tracker) {
+        tracker.style.display = 'block';
+        const lineElement = document.getElementById(chart.svgId + '-track-line');
+        if (lineElement) {
+          lineElement.setAttribute('x1', targetX);
+          lineElement.setAttribute('x2', targetX);
+        }
+      }
+
+      // Update tooltip parameters and HTML HUD
+      if (chart.tooltip) {
+        chart.tooltip.style.display = 'block';
+        const leftPercentage = (targetX / 900) * 100;
+        const topPercentage = (targetY / 160) * 100;
+
+        chart.tooltip.style.left = `${leftPercentage}%`;
+        chart.tooltip.style.top = `${dayItem.pnl >= 0 ? Math.max(10, topPercentage) : Math.min(90, topPercentage)}%`;
+
+        const pnlString = dayItem.pnl >= 0 
+          ? `<span style="color:var(--green)">+$${dayItem.pnl.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>` 
+          : `<span style="color:var(--red)">-$${Math.abs(dayItem.pnl).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>`;
+
+        chart.tooltip.innerHTML = `
+          <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:11px;">📅 ${dayItem.date}</div>
+          <div>Total P&L: <span style="font-weight:700;">${pnlString}</span></div>
+          <div>Dagangan: <span style="color:var(--text); font-weight:700;">${dayItem.count}</span> (${dayItem.wins}W / ${dayItem.losses}L)</div>
+        `;
+      }
+    };
+
+    const hideHUD = () => {
+      const chart = svgEl.chartData;
+      if (!chart) return;
+      const tracker = document.getElementById(chart.trackerId);
+      if (tracker) tracker.style.display = 'none';
+      if (chart.tooltip) chart.tooltip.style.display = 'none';
+    };
+
+    svgEl.addEventListener('mousemove', handleInteraction);
+    svgEl.addEventListener('touchmove', handleInteraction, {passive: true});
+    svgEl.addEventListener('touchstart', handleInteraction, {passive: true});
+    svgEl.addEventListener('mouseleave', hideHUD);
+    svgEl.addEventListener('touchend', hideHUD);
+  }
+}
+
 
 function renderStreaks(elId,maxWS,maxLS,trades){
   const allS=[];let cT=null,cC=0;
