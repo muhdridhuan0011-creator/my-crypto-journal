@@ -40,7 +40,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 
 /* ── GRIDS ── */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
 .grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
 
 
@@ -345,10 +345,10 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 <!-- ════════════════════════════════════════ -->
 <div class="page active" id="page-j">
 
-  <!-- Account Setup -->
+  <!-- Account Setup & Withdrawal -->
   <div class="sec">
-    <div class="sec-title">⚙️ Account Setup</div>
-    <div class="grid2">
+    <div class="sec-title">⚙️ Pengurusan Akaun & 💸 Pengeluaran</div>
+    <div class="grid3">
       <div class="inp-g">
         <div class="inp-lbl">💰 Starting Capital</div>
         <div class="inp-w">
@@ -365,7 +365,18 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <input class="ni" id="j-lev" type="number" value="10" min="1" max="125" step="1" oninput="refreshJournal()">
           <span class="inp-suf">x</span>
         </div>
-        <div class="inp-hint">Boleh diubah setiap sesi dagangan</div>
+        <div class="inp-hint">Boleh diubah setiap sesi</div>
+      </div>
+      <div class="inp-g">
+        <div class="inp-lbl">💸 Rekod Pengeluaran (WD)</div>
+        <div class="inp-w" style="display: flex; gap: 8px;">
+          <div style="position: relative; flex: 1;">
+            <span class="inp-pre" style="left: 11px;">$</span>
+            <input class="ni" id="j-wd-amt" type="number" placeholder="0.00" min="0.01" step="any" style="padding-left: 24px; padding-right: 8px;">
+          </div>
+          <button class="btn btn-red" onclick="addWithdrawal()" style="padding: 0 16px; font-size: 11px; white-space: nowrap; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; height: 44px;">WD</button>
+        </div>
+        <div class="inp-hint">Keluarkan modal / keuntungan</div>
       </div>
     </div>
   </div>
@@ -436,6 +447,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     <div>
       <div class="bal-ret" id="j-ret">—</div>
       <div style="font-size:10px;color:var(--dim);text-align:right;margin-top:3px;font-family:'JetBrains Mono',monospace" id="j-wl">—</div>
+      <div style="font-size:10px;color:var(--red);text-align:right;margin-top:2px;font-family:'JetBrains Mono',monospace;font-weight:700" id="j-total-wd"></div>
     </div>
   </div>
 
@@ -740,11 +752,14 @@ function addTrade(){
   const note=gs('j-note');
   const win=selOutcome==='WIN';
 
-  // compute running balance before this trade
+  // compute running balance before this trade (respecting withdrawals)
   let bal=capital;
   for(const t of jTrades){
-    const pnl=t.win?bal*t.tp:-(bal*t.sl);
-    bal=Math.max(0.001,bal+pnl);
+    if (t.type === 'WD') {
+      bal = Math.max(0.001, bal - t.wdAmount);
+    } else {
+      bal = Math.max(0.001, bal + (t.win ? bal * t.tp : -(bal * t.sl)));
+    }
   }
   const balBefore=bal;
   const pnl=win?balBefore*tp:-(balBefore*sl);
@@ -760,6 +775,49 @@ function addTrade(){
 
   refreshJournal();
 }
+
+// ── NEW HELPER: RECORD WITHDRAWAL (WD) ──────────────────────────────────
+function addWithdrawal() {
+  const amount = parseFloat(document.getElementById('j-wd-amt').value);
+  if (isNaN(amount) || amount <= 0) return;
+
+  // Compute actual rolling balance to guard against overdraft
+  const capital = Math.max(0.01, gv('j-cap'));
+  let bal = capital;
+  for (const t of jTrades) {
+    if (t.type === 'WD') {
+      bal = Math.max(0.001, bal - t.wdAmount);
+    } else {
+      bal = Math.max(0.001, bal + (t.win ? bal * t.tp : -(bal * t.sl)));
+    }
+  }
+
+  if (amount > bal) {
+    showConfirm(`Baki semasa ($${bal.toFixed(2)}) tidak mencukupi untuk mengeluarkan $${amount.toFixed(2)}. Teruskan pengeluaran dengan had maksimum baki sedia ada?`, () => {
+      executeWD(bal);
+    });
+    return;
+  }
+
+  executeWD(amount);
+}
+
+function executeWD(amount) {
+  if (amount <= 0) return;
+  const date = today();
+  jTrades.push({
+    id: Date.now(),
+    date: date,
+    pair: 'WITHDRAWAL',
+    type: 'WD',
+    wdAmount: amount,
+    note: 'Pengeluaran baki modal / keuntungan'
+  });
+  saveJ();
+  document.getElementById('j-wd-amt').value = '';
+  refreshJournal();
+}
+
 
 function deleteTrade(id){
   jTrades=jTrades.filter(t=>t.id!==id);
@@ -799,17 +857,28 @@ function refreshJournal(){
     monthlySelectedMonth = null;
   }
 
-  // recompute all running balances
+  // recompute all running balances (handling withdrawals seamlessly)
   let bal=capital, peak=capital;
   let maxWS=0,maxLS=0,tW=0,tL=0;
+  let totalWithdrawn = 0;
   const comp=[];
   for(const t of jTrades){
     const bb=bal;
-    const pnl=t.win?bb*t.tp:-(bb*t.sl);
+    let pnl = 0;
+    if (t.type === 'WD') {
+      pnl = -t.wdAmount;
+      totalWithdrawn += t.wdAmount;
+    } else {
+      pnl = t.win ? bb * t.tp : -(bb * t.sl);
+    }
     bal=Math.max(0.001,bal+pnl);
     if(bal>peak) peak=bal;
     const dd=((peak-bal)/peak)*100;
-    if(t.win){tW++;tL=0;maxWS=Math.max(maxWS,tW);}else{tL++;tW=0;maxLS=Math.max(maxLS,tL);}
+
+    // Track streaks and statistics exclusively for valid trade entries
+    if (t.type !== 'WD') {
+      if(t.win){tW++;tL=0;maxWS=Math.max(maxWS,tW);}else{tL++;tW=0;maxLS=Math.max(maxLS,tL);}
+    }
     comp.push({...t,bb,pnl,ba:bal,dd,peak});
   }
 
@@ -819,7 +888,7 @@ function refreshJournal(){
   document.getElementById('j-pie').style.display=show?'block':'none';
   document.getElementById('j-chart').style.display=show?'block':'none';
   document.getElementById('j-daily-chart').style.display=show?'block':'none'; 
-  document.getElementById('j-monthly-chart').style.display=show?'block':'none'; // NEW: show monthly grid
+  document.getElementById('j-monthly-chart').style.display=show?'block':'none'; 
   document.getElementById('j-streaks').style.display=show?'grid':'none';
   document.getElementById('j-note-box').style.display=show?'block':'none';
   document.getElementById('j-clear-btn').style.display=show?'inline-block':'none';
@@ -827,31 +896,45 @@ function refreshJournal(){
 
   if(show){
     const final=comp[n-1].ba;
-    const ret=((final-capital)/capital)*100;
-    const wins=jTrades.filter(t=>t.win).length,losses=n-wins;
+    
+    // Total return based on actual performance (adds withdrawn amount back to reflect accurate growth)
+    const ret=((final + totalWithdrawn - capital)/capital)*100;
+    
+    const wins=jTrades.filter(t=> t.type !== 'WD' && t.win).length;
+    const losses=jTrades.filter(t=> t.type !== 'WD' && !t.win).length;
+    const numTrades = wins + losses;
+    const numWD = jTrades.filter(t => t.type === 'WD').length;
+    
     const maxDD=Math.max(...comp.map(t=>t.dd));
     const maxPk=Math.max(...comp.map(t=>t.peak));
-    const avgW=wins>0?comp.filter(t=>t.win).reduce((s,t)=>s+t.pnl,0)/wins:0;
-    const avgL=losses>0?Math.abs(comp.filter(t=>!t.win).reduce((s,t)=>s+t.pnl,0)/losses):0;
+    const avgW=wins>0?comp.filter(t=> t.type !== 'WD' && t.win).reduce((s,t)=>s+t.pnl,0)/wins:0;
+    const avgL=losses>0?Math.abs(comp.filter(t=> t.type !== 'WD' && !t.win).reduce((s,t)=>s+t.pnl,0)/losses):0;
 
-    // Hero
+    // Hero Header Balance Update
     document.getElementById('j-bal-val').textContent=`$${final.toFixed(2)}`;
-    document.getElementById('j-bal-sub').textContent=`${n} trades · started $${capital.toFixed(2)}`;
+    document.getElementById('j-bal-sub').textContent=`${numTrades} trades · started $${capital.toFixed(2)}`;
     const retEl=document.getElementById('j-ret');
     retEl.textContent=`${ret>=0?'+':''}${ret.toFixed(1)}%`;
     retEl.style.color=ret>=0?'var(--green)':'var(--red)';
     document.getElementById('j-wl').textContent=`${wins}W / ${losses}L`;
+    
+    // Display accumulated withdrawals inside balance hero
+    const wdEl = document.getElementById('j-total-wd');
+    if (wdEl) {
+      wdEl.textContent = totalWithdrawn > 0 ? `WD Terkumpul: -$${totalWithdrawn.toFixed(2)}` : '';
+    }
 
-    // Stats
+    // Stats Grid - Including Withdrawal Tracking card
     document.getElementById('j-stats').innerHTML=[
-      {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,  sub:`$${capital.toFixed(0)} → $${final.toFixed(2)}`, cls:ret>=0?'green':'red'},
-      {label:'Win Rate',        value:`${(wins/n*100).toFixed(0)}%`,          sub:`${wins}W / ${losses}L`,                         cls:'blue'},
+      {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,  sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
+      {label:'Win Rate',        value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                         cls:'blue'},
       {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
       {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                 sub:'All-time high',                                  cls:'gold'},
       {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                              cls:'green'},
       {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                             cls:'red'},
       {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                 sub:`Avg Loss: -$${avgL.toFixed(2)}`,                   cls:'green'},
-      {label:'Total Trades',    value:`${n}`,                                 sub:`${wins} wins · ${losses} losses`,               cls:'blue'},
+      {label:'Total Trades',    value:`${numTrades}`,                         sub:`${wins} wins · ${losses} losses`,               cls:'blue'},
+      {label:'Total Withdrawn', value:`$${totalWithdrawn.toFixed(2)}`,        sub:`${numWD} kali pengeluaran`,                      cls:'red'},
     ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
     // Pie Charts
@@ -860,20 +943,20 @@ function refreshJournal(){
       { label: 'Losses', value: losses, color: 'var(--red)', suffix: ' trades', dec: 0 }
     ]);
 
-    const grossProfit = comp.filter(t=>t.win).reduce((s,t)=>s+t.pnl,0);
-    const grossLoss = Math.abs(comp.filter(t=>!t.win).reduce((s,t)=>s+t.pnl,0));
+    const grossProfit = comp.filter(t=> t.type !== 'WD' && t.win).reduce((s,t)=>s+t.pnl,0);
+    const grossLoss = Math.abs(comp.filter(t=> t.type !== 'WD' && !t.win).reduce((s,t)=>s+t.pnl,0));
     drawPieChart('j-pie-pnl', 'j-pie-pnl-leg', [
       { label: 'Gross Profit', value: grossProfit, color: 'var(--green)', prefix: '$', dec: 2 },
       { label: 'Gross Loss', value: grossLoss, color: 'var(--red)', prefix: '$', dec: 2 }
     ]);
 
-    // Equity curve chart
+    // Equity curve chart (reflects withdrawals on portfolio balance)
     drawChart('j-svg',capital,comp.map(t=>t.ba),ret,900,160);
 
-    // Filter trades dynamically for the daily bar chart if a monthly grid filter is active
-    let dailyTradesSource = comp;
+    // Filter trades dynamically for daily chart (strictly excludes WD types from daily statistics)
+    let dailyTradesSource = comp.filter(t => t.type !== 'WD');
     if (monthlySelectedMonth !== null) {
-      dailyTradesSource = comp.filter(t => {
+      dailyTradesSource = dailyTradesSource.filter(t => {
         const tYear = t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear();
         const tMonth = t.date ? parseInt(t.date.substring(5, 7)) - 1 : 0;
         return tYear === monthlyActiveYear && tMonth === monthlySelectedMonth;
@@ -901,7 +984,7 @@ function refreshJournal(){
 
     // Note
     document.getElementById('j-note-box').innerHTML=`
-      <strong>Journal:</strong> ${n} trades · ${wins}W ${losses}L · ${(wins/n*100).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
+      <strong>Journal:</strong> ${numTrades} trades · ${wins}W ${losses}L · ${(numTrades > 0 ? wins/numTrades*100 : 0).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
       <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti, grid bulanan, dan bar harian untuk menapis dan memeriksa prestasi dagangan</span>`;
   }
 
@@ -912,25 +995,43 @@ function refreshJournal(){
     return;
   }
   listEl.innerHTML='<div class="trade-list">'+[...comp].reverse().map(t=>{
-    const pStr=(t.pnl>=0?'+':'')+`$${t.pnl.toFixed(2)}`;
-    const pCol=t.win?'var(--green)':'var(--red)';
     const dateFmt=t.date?t.date.slice(5).replace('-','/'):'-';
-    return `<div class="trade-item" onclick="showDetail(${t.id})">
-      <div class="to ${t.win?'to-w':'to-l'}">${t.win?'W':'L'}</div>
-      <div class="ti-info">
-        <div class="ti-pair">${t.pair}</div>
-        <div class="ti-meta">${dateFmt} · ${t.lev}x · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${t.note?' · '+t.note:''}</div>
-      </div>
-      <div>
-        <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
-        <div class="ti-bal">→ $${t.ba.toFixed(2)}</div>
-      </div>
-      <button class="ti-del" onclick="event.stopPropagation();deleteTrade(${t.id})" title="Delete">🗑</button>
-    </div>`;
+    
+    if (t.type === 'WD') {
+      const pStr = `-$${t.wdAmount.toFixed(2)}`;
+      const pCol = 'var(--dim)';
+      return `<div class="trade-item" onclick="showDetail(${t.id})">
+        <div class="to" style="background:rgba(136,146,164,0.15); color:var(--dim); border:1px solid rgba(136,146,164,0.25)">WD</div>
+        <div class="ti-info">
+          <div class="ti-pair" style="color:var(--dim)">${t.pair}</div>
+          <div class="ti-meta" style="color:var(--dim)">${dateFmt}${t.note?' · '+t.note:''}</div>
+        </div>
+        <div>
+          <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
+          <div class="ti-bal">→ $${t.ba.toFixed(2)}</div>
+        </div>
+        <button class="ti-del" onclick="event.stopPropagation();deleteTrade(${t.id})" title="Delete">🗑</button>
+      </div>`;
+    } else {
+      const pStr=(t.pnl>=0?'+':'')+`$${t.pnl.toFixed(2)}`;
+      const pCol=t.win?'var(--green)':'var(--red)';
+      return `<div class="trade-item" onclick="showDetail(${t.id})">
+        <div class="to ${t.win?'to-w':'to-l'}">${t.win?'W':'L'}</div>
+        <div class="ti-info">
+          <div class="ti-pair">${t.pair}</div>
+          <div class="ti-meta">${dateFmt} · ${t.lev}x · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${t.note?' · '+t.note:''}</div>
+        </div>
+        <div>
+          <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
+          <div class="ti-bal">→ $${t.ba.toFixed(2)}</div>
+        </div>
+        <button class="ti-del" onclick="event.stopPropagation();deleteTrade(${t.id})" title="Delete">🗑</button>
+      </div>`;
+    }
   }).join('')+'</div>';
 }
 
-// ── NEW HELPER: PROCESS AND RENDER MONTHLY GRID ─────────────────────────────
+// ── PROCESS AND RENDER MONTHLY GRID (Excludes WD from Heatmap metrics) ──────
 function renderMonthlyGrid() {
   let years = [...new Set(jTrades.map(t => t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear()))];
   if (years.length === 0) years = [new Date().getFullYear()];
@@ -959,6 +1060,7 @@ function renderMonthlyGrid() {
   }));
 
   jTrades.forEach(t => {
+    if (t.type === 'WD') return; // WD is not a trading activity
     const tYear = t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear();
     if (tYear === monthlyActiveYear) {
       const tMonth = t.date ? parseInt(t.date.substring(5, 7)) - 1 : 0;
@@ -1014,7 +1116,7 @@ function renderMonthlyGrid() {
   }).join('');
 }
 
-// ── NEW HELPER: INTERACTIVE MONTHLY FILTER CLICK ────────────────────────────
+// ── INTERACTIVE MONTHLY FILTER CLICK ────────────────────────────
 function selectMonthlyFilter(idx) {
   if (monthlySelectedMonth === idx) {
     monthlySelectedMonth = null; // Toggle off filter if clicked twice
@@ -1024,7 +1126,7 @@ function selectMonthlyFilter(idx) {
   refreshJournal();
 }
 
-// ── NEW HELPER: INTERACTIVE MONTHLY HUD SENSORS ─────────────────────────────
+// ── INTERACTIVE MONTHLY HUD SENSORS ─────────────────────────────
 function showMonthlyHUD(idx) {
   const m = monthlyDataCache[idx];
   const hud = document.getElementById('j-monthly-hud');
@@ -1073,35 +1175,60 @@ function changeMonthlyYear(dir) {
 
 function showDetail(id){
   const t=jTrades.find(x=>x.id===id); if(!t) return;
-  // recompute this trade's running balance
+  // recompute this trade's running balance (considering withdrawals)
   const capital=Math.max(0.01,gv('j-cap'));
   let bal=capital;
   for(const x of jTrades){
     if(x.id===id) break;
-    bal=Math.max(0.001,bal+(x.win?bal*x.tp:-(bal*x.sl)));
+    if (x.type === 'WD') {
+      bal = Math.max(0.001, bal - x.wdAmount);
+    } else {
+      bal = Math.max(0.001, bal + (x.win ? bal * x.tp : -(bal * x.sl)));
+    }
   }
   const balBefore=bal;
-  const pnl=t.win?balBefore*t.tp:-(balBefore*t.sl);
-  const balAfter=Math.max(0.001,balBefore+pnl);
 
-  document.getElementById('modal-ttl').textContent=`${t.pair} — ${t.win?'✅ WIN':'❌ LOSS'}`;
-  document.getElementById('modal-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      ${[
-        ['Date',t.date||'—'],['Pair',t.pair],
-        ['Outcome',t.win?'WIN':'LOSS'],['Leverage',t.lev+'x'],
-        ['Take Profit',(t.tp*100).toFixed(1)+'%'],['Stop Loss',(t.sl*100).toFixed(1)+'%'],
-        ['Bal Before','$'+balBefore.toFixed(2)],['P&L',(pnl>=0?'+':'')+'$'+pnl.toFixed(2)],
-        ['Bal After','$'+balAfter.toFixed(2)],['Change',(pnl/balBefore*100>=0?'+':'')+(pnl/balBefore*100).toFixed(2)+'%'],
-      ].map(([k,v])=>`<div style="background:var(--surf2);border-radius:8px;padding:11px">
-        <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${k}</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${k==='P&L'?(t.win?'var(--green)':'var(--red)'):'var(--text)'}">${v}</div>
-      </div>`).join('')}
-    </div>
-    ${t.note?`<div style="background:var(--surf2);border-radius:8px;padding:11px;margin-bottom:14px">
-      <div style="font-size:8px;color:var(--dim);margin-bottom:3px;letter-spacing:1px;text-transform:uppercase">Notes</div>
-      <div style="font-size:13px">${t.note}</div></div>`:''}
-    <button class="btn btn-red" style="width:100%;padding:11px;font-size:11px" onclick="deleteTrade(${id});closeModal()">🗑 Delete Trade</button>`;
+  if (t.type === 'WD') {
+    const pnl = -t.wdAmount;
+    const balAfter = Math.max(0.001, balBefore + pnl);
+    document.getElementById('modal-ttl').textContent = `Pengeluaran (Withdrawal)`;
+    document.getElementById('modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        ${[
+          ['Tarikh', t.date || '—'], ['Jenis', 'Withdrawal'],
+          ['Bal Sebelum', '$' + balBefore.toFixed(2)], ['Jumlah WD', '$' + t.wdAmount.toFixed(2)],
+          ['Bal Selepas', '$' + balAfter.toFixed(2)], ['Peratusan Kesan', (pnl / balBefore * 100).toFixed(2) + '%'],
+        ].map(([k,v])=>`<div style="background:var(--surf2);border-radius:8px;padding:11px">
+          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${k}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${k==='Jumlah WD'?'var(--red)':'var(--text)'}">${v}</div>
+        </div>`).join('')}
+      </div>
+      ${t.note?`<div style="background:var(--surf2);border-radius:8px;padding:11px;margin-bottom:14px">
+        <div style="font-size:8px;color:var(--dim);margin-bottom:3px;letter-spacing:1px;text-transform:uppercase">Nota</div>
+        <div style="font-size:13px">${t.note}</div></div>`:''}
+      <button class="btn btn-red" style="width:100%;padding:11px;font-size:11px" onclick="deleteTrade(${id});closeModal()">🗑 Padam Rekod WD</button>`;
+  } else {
+    const pnl=t.win?balBefore*t.tp:-(balBefore*t.sl);
+    const balAfter=Math.max(0.001,balBefore+pnl);
+    document.getElementById('modal-ttl').textContent=`${t.pair} — ${t.win?'✅ WIN':'❌ LOSS'}`;
+    document.getElementById('modal-body').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        ${[
+          ['Date',t.date||'—'],['Pair',t.pair],
+          ['Outcome',t.win?'WIN':'LOSS'],['Leverage',t.lev+'x'],
+          ['Take Profit',(t.tp*100).toFixed(1)+'%'],['Stop Loss',(t.sl*100).toFixed(1)+'%'],
+          ['Bal Before','$'+balBefore.toFixed(2)],['P&L',(pnl>=0?'+':'')+'$'+pnl.toFixed(2)],
+          ['Bal After','$'+balAfter.toFixed(2)],['Change',(pnl/balBefore*100>=0?'+':'')+(pnl/balBefore*100).toFixed(2)+'%'],
+        ].map(([k,v])=>`<div style="background:var(--surf2);border-radius:8px;padding:11px">
+          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${k}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${k==='P&L'?(t.win?'var(--green)':'var(--red)'):'var(--text)'}">${v}</div>
+        </div>`).join('')}
+      </div>
+      ${t.note?`<div style="background:var(--surf2);border-radius:8px;padding:11px;margin-bottom:14px">
+        <div style="font-size:8px;color:var(--dim);margin-bottom:3px;letter-spacing:1px;text-transform:uppercase">Notes</div>
+        <div style="font-size:13px">${t.note}</div></div>`:''}
+      <button class="btn btn-red" style="width:100%;padding:11px;font-size:11px" onclick="deleteTrade(${id});closeModal()">🗑 Delete Trade</button>`;
+  }
   document.getElementById('modal').classList.add('open');
 }
 
@@ -1111,12 +1238,42 @@ function closeModalClick(e){ if(e.target===document.getElementById('modal')) clo
 function exportCSV(){
   const capital=Math.max(0.01,gv('j-cap'));
   let bal=capital;
-  let rows=[['#','Date','Pair','Outcome','Leverage','TP%','SL%','Bal Before','P&L','Bal After','Change%','Notes']];
+  let rows=[['#','Date','Pair','Outcome','Leverage','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Notes']];
   jTrades.forEach((t,i)=>{
     const bb=bal;
-    const pnl=t.win?bb*t.tp:-(bb*t.sl);
-    bal=Math.max(0.001,bal+pnl);
-    rows.push([i+1,t.date,t.pair,t.win?'WIN':'LOSS',t.lev+'x',(t.tp*100).toFixed(1)+'%',(t.sl*100).toFixed(1)+'%',bb.toFixed(2),pnl.toFixed(2),bal.toFixed(2),(pnl/bb*100).toFixed(2)+'%',t.note||'']);
+    let pnl = 0;
+    let outcome = '';
+    let tpStr = '';
+    let slStr = '';
+    let levStr = '';
+
+    if (t.type === 'WD') {
+      pnl = -t.wdAmount;
+      bal = Math.max(0.001, bal - t.wdAmount);
+      outcome = 'WITHDRAWAL';
+    } else {
+      pnl = t.win?bb*t.tp:-(bb*t.sl);
+      bal = Math.max(0.001, bal + pnl);
+      outcome = t.win?'WIN':'LOSS';
+      tpStr = (t.tp*100).toFixed(1)+'%';
+      slStr = (t.sl*100).toFixed(1)+'%';
+      levStr = t.lev+'x';
+    }
+
+    rows.push([
+      i+1,
+      t.date,
+      t.pair,
+      outcome,
+      levStr,
+      tpStr,
+      slStr,
+      bb.toFixed(2),
+      pnl.toFixed(2),
+      bal.toFixed(2),
+      (pnl/bb*100).toFixed(2)+'%',
+      t.note||''
+    ]);
   });
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const a=document.createElement('a');
@@ -1466,13 +1623,22 @@ function drawChart(svgId,start,balArr,ret,W,H){
         if(data.isJournal && i > 0 && jTrades[i-1]) {
           const t = jTrades[i-1];
           const change = ((bal - data.start) / data.start) * 100;
-          const winStr = t.win ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
-          content = `
-            <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}: ${t.pair}</div>
-            <div>Outcome: ${winStr}</div>
-            <div>Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-            <div>ROI: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
-          `;
+          
+          if (t.type === 'WD') {
+            content = `
+              <div style="font-weight:700;color:var(--red);margin-bottom:3px;font-size:12px;">💸 PENGELUARAN #${i}</div>
+              <div>Baki Baki: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+              <div>Jumlah WD: <span style="color:var(--red)">-$${t.wdAmount.toFixed(2)}</span></div>
+            `;
+          } else {
+            const winStr = t.win ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
+            content = `
+              <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}: ${t.pair}</div>
+              <div>Outcome: ${winStr}</div>
+              <div>Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+              <div>ROI: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
+            `;
+          }
         } else if(!data.isJournal && i > 0) {
           // Simulation data
           const change = ((bal - data.start) / data.start) * 100;
@@ -1721,6 +1887,7 @@ function drawDailyBarChart(svgId, trades) {
 function renderStreaks(elId,maxWS,maxLS,trades){
   const allS=[];let cT=null,cC=0;
   trades.forEach(t=>{
+    if (t.type === 'WD') return; // Streak tracking only for actual trade outcomes
     const tp=t.win?'W':'L';
     if(tp===cT)cC++;else{if(cT)allS.push({type:cT,count:cC});cT=tp;cC=1;}
   });
