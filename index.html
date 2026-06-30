@@ -226,6 +226,24 @@ svg.chart{width:100%;display:block;cursor:crosshair;}
   box-shadow: inset 0 0 10px rgba(255, 23, 68, 0.15);
 }
 
+/* Cyber highlighted month filter states */
+.month-box.selected-filter {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.35) !important;
+  transform: translateY(-2px);
+  background: rgba(0, 229, 255, 0.08) !important;
+}
+.month-box.selected-filter.active-win {
+  background: rgba(0, 230, 118, 0.25) !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 0 12px rgba(0, 230, 118, 0.35) !important;
+}
+.month-box.selected-filter.active-loss {
+  background: rgba(255, 23, 68, 0.25) !important;
+  border-color: var(--red) !important;
+  box-shadow: 0 0 12px rgba(255, 23, 68, 0.35) !important;
+}
+
 /* ── PIE CHART ── */
 .pie-sec{padding:20px 24px 0}
 .pie-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -457,7 +475,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- NEW FEATURE: Monthly P&L Grid (Kotak Kotak Kecil) -->
+  <!-- Monthly P&L Grid (Kotak Kotak Kecil) -->
   <div class="chart-sec" id="j-monthly-chart" style="display:none">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
       <div class="chart-title" style="margin:0">📅 Grid P&L Bulanan</div>
@@ -669,6 +687,7 @@ let jTrades = [];
 let selOutcome = 'WIN';
 
 let monthlyActiveYear = new Date().getFullYear();
+let monthlySelectedMonth = null; // Filter state: null (no filter) or 0-11 (selected month index)
 let monthlyDataCache = [];
 const monthlyMonthsBMFull = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
 
@@ -776,6 +795,10 @@ function refreshJournal(){
   const capital=Math.max(0.01,gv('j-cap'));
   const n=jTrades.length;
 
+  if (n === 0) {
+    monthlySelectedMonth = null;
+  }
+
   // recompute all running balances
   let bal=capital, peak=capital;
   let maxWS=0,maxLS=0,tW=0,tL=0;
@@ -847,10 +870,30 @@ function refreshJournal(){
     // Equity curve chart
     drawChart('j-svg',capital,comp.map(t=>t.ba),ret,900,160);
 
-    // Draw Daily P&L Bar Chart
-    drawDailyBarChart('j-daily-svg', comp);
+    // Filter trades dynamically for the daily bar chart if a monthly grid filter is active
+    let dailyTradesSource = comp;
+    if (monthlySelectedMonth !== null) {
+      dailyTradesSource = comp.filter(t => {
+        const tYear = t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear();
+        const tMonth = t.date ? parseInt(t.date.substring(5, 7)) - 1 : 0;
+        return tYear === monthlyActiveYear && tMonth === monthlySelectedMonth;
+      });
+    }
 
-    // NEW: Calculate and Render Monthly Grid
+    // Draw Daily P&L Bar Chart
+    drawDailyBarChart('j-daily-svg', dailyTradesSource);
+
+    // Update daily bar chart title with current filtered selection
+    const dailyTitleEl = document.querySelector('#j-daily-chart .chart-title');
+    if (dailyTitleEl) {
+      if (monthlySelectedMonth !== null) {
+        dailyTitleEl.textContent = `📊 Prestasi P&L Harian — ${monthlyMonthsBMFull[monthlySelectedMonth]} ${monthlyActiveYear}`;
+      } else {
+        dailyTitleEl.textContent = `📊 Prestasi P&L Harian (${monthlyActiveYear})`;
+      }
+    }
+
+    // Render Monthly Heatmap Grid
     renderMonthlyGrid();
 
     // Streaks
@@ -859,7 +902,7 @@ function refreshJournal(){
     // Note
     document.getElementById('j-note-box').innerHTML=`
       <strong>Journal:</strong> ${n} trades · ${wins}W ${losses}L · ${(wins/n*100).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
-      <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti dan bar harian untuk memeriksa prestasi setiap dagangan</span>`;
+      <span style="color:#3a4455">💡 Sentuh atau gerakkan jari anda pada graf keluk ekuiti, grid bulanan, dan bar harian untuk menapis dan memeriksa prestasi dagangan</span>`;
   }
 
   // Render list
@@ -953,17 +996,32 @@ function renderMonthlyGrid() {
     }
 
     const valueStr = m.count > 0 ? (m.pnl >= 0 ? `+$${m.pnl.toFixed(0)}` : `-$${Math.abs(m.pnl).toFixed(0)}`) : "—";
+    
+    // Toggle active monthly filter border styling
+    const isSelected = monthlySelectedMonth === i;
+    const selectClass = isSelected ? 'selected-filter' : '';
 
     return `
-      <div class="month-box ${intensityClass}" 
+      <div class="month-box ${intensityClass} ${selectClass}" 
+           onclick="selectMonthlyFilter(${i})" 
            onmouseenter="showMonthlyHUD(${i})" 
            onmouseleave="clearMonthlyHUD()"
-           ontouchstart="showMonthlyHUD(${i}); event.preventDefault();">
+           ontouchstart="showMonthlyHUD(${i}); selectMonthlyFilter(${i}); event.preventDefault();">
         <div class="m-lbl">${monthNamesBM[i]}</div>
         <div class="m-val" style="color:${textStyle};">${valueStr}</div>
       </div>
     `;
   }).join('');
+}
+
+// ── NEW HELPER: INTERACTIVE MONTHLY FILTER CLICK ────────────────────────────
+function selectMonthlyFilter(idx) {
+  if (monthlySelectedMonth === idx) {
+    monthlySelectedMonth = null; // Toggle off filter if clicked twice
+  } else {
+    monthlySelectedMonth = idx;
+  }
+  refreshJournal();
 }
 
 // ── NEW HELPER: INTERACTIVE MONTHLY HUD SENSORS ─────────────────────────────
@@ -977,11 +1035,24 @@ function showMonthlyHUD(idx) {
   const color = m.pnl >= 0 ? 'var(--green)' : 'var(--red)';
   const sign = m.pnl >= 0 ? '+' : '-';
   const wr = ((m.wins / m.count) * 100).toFixed(0);
-  hud.innerHTML = `📅 <strong>${monthlyMonthsBMFull[idx]} ${monthlyActiveYear}</strong> · P&L Bersih: <span style="color:${color}; font-weight:700;">${sign}$${Math.abs(m.pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> · 💼 Trades: <strong>${m.count}</strong> (${m.wins}W / ${m.losses}L, WR: <strong>${wr}%</strong>)`;
+  
+  const isSelected = monthlySelectedMonth === idx;
+  const filterTip = isSelected 
+    ? ' <span style="color:var(--accent); font-weight:bold;">(Tapis Aktif - Klik untuk set semula)</span>' 
+    : ' <span style="color:var(--dim); font-style:italic;">(Klik untuk tapis bar harian)</span>';
+
+  hud.innerHTML = `📅 <strong>${monthlyMonthsBMFull[idx]} ${monthlyActiveYear}</strong> · P&L Bersih: <span style="color:${color}; font-weight:700;">${sign}$${Math.abs(m.pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> · 💼 Trades: <strong>${m.count}</strong> (${m.wins}W / ${m.losses}L, WR: <strong>${wr}%</strong>)${filterTip}`;
 }
 
 function clearMonthlyHUD() {
-  document.getElementById('j-monthly-hud').innerHTML = `Lalukan tetikus atau ketik pada kotak bulan untuk butiran lanjut`;
+  if (monthlySelectedMonth !== null) {
+    const m = monthlyDataCache[monthlySelectedMonth];
+    const color = m.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = m.pnl >= 0 ? '+' : '-';
+    document.getElementById('j-monthly-hud').innerHTML = `🔍 Menapis: <strong>${monthlyMonthsBMFull[monthlySelectedMonth]} ${monthlyActiveYear}</strong> (P&L: <span style="color:${color}; font-weight:700;">${sign}$${Math.abs(m.pnl).toFixed(0)}</span>) · Klik bulan sekali lagi untuk tunjukkan keseluruhan tahun`;
+  } else {
+    document.getElementById('j-monthly-hud').innerHTML = `Lalukan tetikus atau ketik pada kotak bulan untuk menapis prestasi harian`;
+  }
 }
 
 function changeMonthlyYear(dir) {
@@ -995,6 +1066,7 @@ function changeMonthlyYear(dir) {
   let nextIdx = currentIdx + dir;
   if (nextIdx >= 0 && nextIdx < years.length) {
     monthlyActiveYear = years[nextIdx];
+    monthlySelectedMonth = null; // Reset month filter upon switching calendar years
     refreshJournal();
   }
 }
@@ -1444,7 +1516,25 @@ function drawChart(svgId,start,balArr,ret,W,H){
 
 // ── DRAW DAILY P&L BAR CHART ──────────────────────────────────────────────
 function drawDailyBarChart(svgId, trades) {
-  if (!trades || trades.length === 0) return;
+  const svgEl = document.getElementById(svgId);
+  if (!svgEl) return;
+
+  // Render elegant placeholder layout if zero daily items exist under the current monthly filter
+  if (!trades || trades.length === 0) {
+    svgEl.innerHTML = `
+      <text x="450" y="85" fill="var(--dim)" font-size="11" font-family="'JetBrains Mono',monospace" text-anchor="middle" letter-spacing="1">
+        TIADA REKOD DAGANGAN PADA BULAN INI
+      </text>
+    `;
+    const tracker = document.getElementById(svgId + '-tracker');
+    if (tracker) tracker.style.display = 'none';
+    
+    // Hide active tooltip
+    const wrap = svgEl.parentElement;
+    const tooltip = wrap.querySelector('.chart-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+    return;
+  }
 
   // Group trades by date and compute consolidated daily statistics
   const dailyData = {};
@@ -1465,9 +1555,6 @@ function drawDailyBarChart(svgId, trades) {
     date: d,
     ...dailyData[d]
   }));
-
-  const svgEl = document.getElementById(svgId);
-  if (!svgEl) return;
 
   const W = 900;
   const H = 160;
@@ -1519,7 +1606,7 @@ function drawDailyBarChart(svgId, trades) {
       barHeight = Math.max(1.5, yVal - zeroY);
     }
 
-    // Wrap elements inside styled group, inserting an invisible overlay rect for high-precision pointer tracking
+    // Wrap elements inside styled group, inserting an invisible overlay rect for high-precision tracking
     barsHTML += `
       <g class="bar-group" data-idx="${i}">
         <rect x="${xPos}" y="${barY}" width="${barWidth}" height="${barHeight}" fill="${color}" opacity="0.8" rx="2" style="transition: all 0.2s;" />
