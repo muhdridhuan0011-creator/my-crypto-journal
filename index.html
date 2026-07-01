@@ -433,6 +433,18 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
       </div>
     </div>
 
+    <!-- conditional row for screenshot and layout spacing -->
+    <div class="grid2" style="margin-top: 12px; margin-bottom: 12px;">
+      <div class="inp-g">
+        <div class="inp-lbl">📷 Entry Chart Screenshot</div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input class="ti" id="j-screenshot" type="file" accept="image/*" onchange="handleScreenshotSelect(event)" style="padding: 8px 10px; font-size: 11px; flex: 1;">
+          <img id="j-screenshot-preview" style="display: none; width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border);" alt="Preview"/>
+        </div>
+        <div class="inp-hint">Attach screenshot for performance tracking</div>
+      </div>
+    </div>
+
     <div class="inp-lbl" style="margin-bottom:8px">Outcome</div>
     <div class="outcome-row">
       <button class="ob" id="ob-w" onclick="selectOutcome('WIN')">✅ WIN</button>
@@ -747,7 +759,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     <div id="confirm-modal-body" style="font-size:13px; color:var(--text); margin-bottom:20px; line-height:1.5; font-family:'JetBrains Mono',monospace;"></div>
     <div style="display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn btn-outline" onclick="closeConfirmModal()">Cancel</button>
-      <button class="btn btn-red" id="confirm-modal-yes" style="background:rgba(255,23,68,0.2); border:1px solid var(--red); color:var(--red)">CLEAR ALL</button>
+      <button class="btn btn-red" id="confirm-modal-yes" style="background:rgba(255,23,68,0.2); border:1px solid var(--red); color:var(--red)">PADAM SEMUA</button>
     </div>
   </div>
 </div>
@@ -797,6 +809,53 @@ function loadJ(){
 
 function gv(id){ const v=parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
 function gs(id){ return document.getElementById(id).value.trim(); }
+
+// ── SCREENSHOT FILE LOADING & BASE64 ENCODING ────────────────────────────
+let attachedScreenshotBase64 = "";
+function handleScreenshotSelect(event) {
+  const file = event.target.files[0];
+  const preview = document.getElementById('j-screenshot-preview');
+  if (!file) {
+    attachedScreenshotBase64 = "";
+    preview.style.display = 'none';
+    preview.src = "";
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Off-screen canvas to downscale screenshots preserving localStorage limits
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const max_size = 1000;
+      if (width > height) {
+        if (width > max_size) {
+          height *= max_size / width;
+          width = max_size;
+        }
+      } else {
+        if (height > max_size) {
+          width *= max_size / height;
+          height = max_size;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Compress to lightweight, readable JPEG at 70% quality
+      attachedScreenshotBase64 = canvas.toDataURL('image/jpeg', 0.7);
+      preview.src = attachedScreenshotBase64;
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function today(){
   const d=new Date();
@@ -861,7 +920,8 @@ function addTrade(){
     balAfter,
     note,
     session,
-    lossReason
+    lossReason,
+    screenshot: attachedScreenshotBase64 // Optional screenshot string field
   });
   saveJ();
 
@@ -870,6 +930,12 @@ function addTrade(){
   document.getElementById('j-note').value='';
   document.getElementById('j-date').value=today();
   document.getElementById('j-loss-reason').value='';
+  
+  // Reset screenshot states
+  document.getElementById('j-screenshot').value = '';
+  document.getElementById('j-screenshot-preview').style.display = 'none';
+  document.getElementById('j-screenshot-preview').src = "";
+  attachedScreenshotBase64 = "";
 
   refreshJournal();
 }
@@ -1191,7 +1257,7 @@ function refreshJournal(){
       <span style="color:#3a4455">💡 Touch or move your finger on the equity curve, monthly grid, and daily bar chart to filter and inspect trading performance.</span>`;
   }
 
-  // Render list
+  // Render list (Trade History update with screenshot icons)
   const listEl=document.getElementById('j-list');
   if(n===0){
     listEl.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">No trades logged yet</div><div class="empty-sub">Please log your first trade using the form above</div></div>`;
@@ -1221,10 +1287,20 @@ function refreshJournal(){
       const sessionLabel = t.session ? ` · ${t.session}` : ' · Asia';
       const tagLabel = (!t.win && t.lossReason) ? ` · <span style="color:var(--red); font-size:9px;">[${t.lossReason}]</span>` : '';
       
+      // Inline beautiful outcome color-coded SVG Camera Icon
+      const screenshotIcon = t.screenshot ? `
+        <svg onclick="event.stopPropagation(); openScreenshotLightbox('${t.screenshot}')" style="cursor: pointer; width: 15px; height: 15px; fill: ${pCol}; margin-left: 6px; vertical-align: middle; transition: transform 0.15s, opacity 0.15s; opacity: 0.85;" onmouseover="this.style.transform='scale(1.2)'; this.style.opacity='1';" onmouseout="this.style.transform='scale(1)'; this.style.opacity='0.85';" viewBox="0 0 24 24" title="View Chart Screenshot">
+          <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+        </svg>
+      ` : '';
+
       return `<div class="trade-item" onclick="showDetail(${t.id})">
         <div class="to ${t.win?'to-w':'to-l'}">${t.win?'W':'L'}</div>
         <div class="ti-info">
-          <div class="ti-pair">${t.pair}</div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div class="ti-pair">${t.pair}</div>
+            ${screenshotIcon}
+          </div>
           <div class="ti-meta">${dateFmt} · ${t.lev}x · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
         </div>
         <div>
@@ -1267,7 +1343,7 @@ function renderMonthlyGrid() {
   }));
 
   jTrades.forEach(t => {
-    if (t.type === 'WD') return; // WD is not a trading activity
+    if (t.type === 'WD') return; 
     const tYear = t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear();
     if (tYear === monthlyActiveYear) {
       const tMonth = t.date ? parseInt(t.date.substring(5, 7)) - 1 : 0;
@@ -1326,7 +1402,7 @@ function renderMonthlyGrid() {
 // ── INTERACTIVE MONTHLY FILTER CLICK ────────────────────────────
 function selectMonthlyFilter(idx) {
   if (monthlySelectedMonth === idx) {
-    monthlySelectedMonth = null; // Toggle off filter if clicked twice
+    monthlySelectedMonth = null; 
   } else {
     monthlySelectedMonth = idx;
   }
@@ -1375,7 +1451,7 @@ function changeMonthlyYear(dir) {
   let nextIdx = currentIdx + dir;
   if (nextIdx >= 0 && nextIdx < years.length) {
     monthlyActiveYear = years[nextIdx];
-    monthlySelectedMonth = null; // Reset month filter upon switching calendar years
+    monthlySelectedMonth = null; 
     refreshJournal();
   }
 }
@@ -1432,6 +1508,14 @@ function showDetail(id){
     if (!t.win && t.lossReason) {
       detailsGrid.splice(6, 0, ['Loss Reason', t.lossReason]);
     }
+    
+    // Interactive Thumbnail inside modal detail block
+    if (t.screenshot) {
+      detailsGrid.push([
+        'Chart Screenshot', 
+        `<img src="${t.screenshot}" style="width: 60px; height: 40px; border-radius: 4px; object-fit: cover; border: 1.5px solid var(--border); cursor: pointer;" onclick="openScreenshotLightbox('${t.screenshot}')" title="Click to view full image"/>`
+      ]);
+    }
 
     document.getElementById('modal-ttl').textContent=`${t.pair} — ${t.win?'✅ WIN':'❌ LOSS'}`;
     document.getElementById('modal-body').innerHTML=`
@@ -1452,10 +1536,27 @@ function showDetail(id){
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function closeModalClick(e){ if(e.target===document.getElementById('modal')) closeModal(); }
 
+// ── LIGHTBOX MODAL EVENT HANDLERS ───────────────────────────────────────
+function openScreenshotLightbox(base64Source) {
+  document.getElementById('modal-screenshot-img').src = base64Source;
+  document.getElementById('screenshot-modal').classList.add('open');
+}
+
+function closeScreenshotModal() {
+  document.getElementById('screenshot-modal').classList.remove('open');
+  document.getElementById('modal-screenshot-img').src = '';
+}
+
+function closeScreenshotModalClick(e) {
+  if (e.target === document.getElementById('screenshot-modal')) {
+    closeScreenshotModal();
+  }
+}
+
 function exportCSV(){
   const capital=Math.max(0.01,gv('j-cap'));
   let bal=capital;
-  let rows=[['#','Date','Pair','Outcome','Leverage','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Notes']];
+  let rows=[['#','Date','Pair','Outcome','Leverage','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
   jTrades.forEach((t,i)=>{
     const bb=bal;
     let pnl = 0;
@@ -1465,6 +1566,7 @@ function exportCSV(){
     let levStr = '';
     let sessionStr = '';
     let lossReasonStr = '';
+    let screenshotStatus = 'No';
 
     if (t.type === 'WD') {
       pnl = -t.wdAmount;
@@ -1479,6 +1581,7 @@ function exportCSV(){
       levStr = t.lev+'x';
       sessionStr = t.session || 'Asia';
       lossReasonStr = !t.win ? (t.lossReason || '') : '';
+      screenshotStatus = t.screenshot ? 'Yes' : 'No';
     }
 
     rows.push([
@@ -1495,6 +1598,7 @@ function exportCSV(){
       (pnl/bb*100).toFixed(2)+'%',
       sessionStr,
       lossReasonStr,
+      screenshotStatus, // CSV keeps small size while tracking screenshots
       t.note||''
     ]);
   });
@@ -1849,9 +1953,9 @@ function drawChart(svgId,start,balArr,ret,W,H){
           
           if (t.type === 'WD') {
             content = `
-              <div style="font-weight:700;color:var(--red);margin-bottom:3px;font-size:12px;">💸 PENGELUARAN #${i}</div>
-              <div>Baki Baki: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-              <div>Jumlah WD: <span style="color:var(--red)">-$${t.wdAmount.toFixed(2)}</span></div>
+              <div style="font-weight:700;color:var(--red);margin-bottom:3px;font-size:12px;">💸 WITHDRAWAL #${i}</div>
+              <div>Remaining Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+              <div>Withdrawal Amount: <span style="color:var(--red)">-$${t.wdAmount.toFixed(2)}</span></div>
             `;
           } else {
             const winStr = t.win ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
@@ -2124,7 +2228,7 @@ function renderStreaks(elId,maxWS,maxLS,trades){
       <div style="display:flex;gap:16px;font-family:'JetBrains Mono',monospace;margin-bottom:10px">
         <div><div style="color:var(--dim);font-size:8px;margin-bottom:2px">MAX</div><div class="red" style="font-size:18px;font-weight:700">${maxLS}</div></div>
         <div><div style="color:var(--dim);font-size:8px;margin-bottom:2px">COUNT</div><div style="font-size:18px;font-weight:700">${lS.length}</div></div>
-        <div><div style="color:var(--dim);font-size:8px;margin-bottom:2px">AVG</div><div style="font-size:18px;font-weight:700">${aLS.toFixed(1)}</div></div>
+        <div><div style="color:var(--dim);font-size:8px;margin-bottom:2px">AVG</div><div style="font-size:16px;font-weight:700">${aLS.toFixed(1)}</div></div>
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">${lS.map(c=>`<span style="background:rgba(255,23,68,0.1);color:var(--red);border:1px solid rgba(255,23,68,0.2);padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:10px">L${c}</span>`).join('')}</div>
     </div>`;
@@ -2147,5 +2251,19 @@ refreshJournal();
 applyWR();
 updateEV();
 </script>
+
+<!-- MODAL: Full Screen Screenshot Viewer -->
+<div class="modal-overlay" id="screenshot-modal" onclick="closeScreenshotModalClick(event)">
+  <div class="modal" style="max-width: 800px; padding: 20px; background: var(--surf); border: 1.5px solid var(--border);">
+    <div class="modal-title">
+      <span>Chart Screenshot</span>
+      <button class="modal-close" onclick="closeScreenshotModal()">✕</button>
+    </div>
+    <div style="width: 100%; display: flex; justify-content: center; align-items: center; background: #05070a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+      <img id="modal-screenshot-img" src="" style="max-width: 100%; max-height: 70vh; object-fit: contain; display: block;" alt="Chart Screenshot" />
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
