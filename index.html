@@ -457,9 +457,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
       <select class="ti" id="j-loss-reason">
         <option value="">-- Select Reason / Behavior --</option>
         <option value="FOMO / Chasing Price">[FOMO / Chasing Price]</option>
-        <option value="Slippage / Market Gap">[Slippage / Market Gap]</option>
         <option value="Valid Fakeout">[Valid Fakeout]</option>
-        <option value="SOP Mistake / Human Error">[SOP Mistake / Human Error]</option>
         <option value="Revenge Market">[Revenge Market]</option>
       </select>
     </div>
@@ -551,23 +549,28 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Monthly P&L Grid (Kotak Kotak Kecil) -->
-  <div class="chart-sec" id="j-monthly-chart" style="display:none">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-      <div class="chart-title" style="margin:0">📅 Monthly P&L Grid</div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <button class="btn btn-outline" id="j-m-prev-yr" onclick="changeMonthlyYear(-1)" style="padding:2px 8px; font-size:10px;"><</button>
-        <span id="j-monthly-year-val" style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--accent);">2026</span>
-        <button class="btn btn-outline" id="j-m-next-yr" onclick="changeMonthlyYear(1)" style="padding:2px 8px; font-size:10px;">></button>
-      </div>
-    </div>
-    <div class="chart-wrap" style="padding:16px;">
-      <div id="j-monthly-grid" class="monthly-grid"></div>
-      <div id="j-monthly-hud" style="margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); text-align:center; min-height:16px;">
-        Hover or tap on month boxes to filter daily performance
-      </div>
-    </div>
-  </div>
+/* --- MONTHLY P&L GRID (KOTAK KECIL & KOMPAK) --- */
+.monthly-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Susunan 4 kolum x 3 baris, sangat ngam untuk mobile */
+  gap: 6px;                             /* Jarak rapat antara kotak supaya tak makan ruang */
+  max-width: 280px;                     /* Mengecilkan lebar keseluruhan kontainer grid */
+  margin: 0 auto;                       /* Memastikan kedudukan grid sentiasa di tengah */
+}
+
+/* Kotak bulan di dalam grid (Elemen yang dijana oleh JavaScript) */
+.monthly-grid > div {
+  aspect-ratio: 1 / 1;                  /* Paksa kotak jadi segi empat sama yang comel */
+  padding: 4px;                         /* Mengurangkan ruang kosong di dalam kotak */
+  font-size: 10px;                      /* Saiz teks nama bulan yang kecil dan kemas (JAN, FEB) */
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;                   /* Lengkungan bucu kotak yang lebih halus */
+  min-width: 0;                         /* Mengelakkan isu teks terkeluar dari kotak */
+}
 
   <!-- Session & Psychology Analytics Breakdown -->
   <div class="chart-sec" id="j-analytics-sec" style="display:none">
