@@ -6,7 +6,7 @@
 <title>CryptoSim — Compound Simulator & Journal</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
-:root{
+:root {
   --bg:#0a0c10;--surf:#111318;--surf2:#181c24;--border:#1f2430;
   --accent:#00e5ff;--green:#00e676;--red:#ff1744;--gold:#ffd600;
   --text:#e2e8f0;--dim:#8892a4;
@@ -40,6 +40,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 /* ── GRIDS ── */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
 .grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
 
 /* ── INPUT GROUPS ── */
@@ -55,12 +56,14 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .ti:focus{border-color:var(--accent)}
 .inp-hint{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 
-/* ── OUTCOME TOGGLE ── */
+/* ── OUTCOME & POSITION TOGGLE ── */
 .outcome-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .ob{padding:13px;border-radius:9px;border:2px solid var(--border);background:var(--surf2);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;text-align:center;letter-spacing:1px}
 .ob:hover{border-color:var(--dim)}
 .ob.win-sel{background:rgba(0,230,118,0.15);border-color:var(--green);color:var(--green);box-shadow: 0 0 10px rgba(0,230,118,0.1)}
 .ob.loss-sel{background:rgba(255,23,68,0.15);border-color:var(--red);color:var(--red);box-shadow: 0 0 10px rgba(255,23,68,0.1)}
+.ob.long-sel{background:rgba(0,229,255,0.15);border-color:var(--accent);color:var(--accent);box-shadow: 0 0 10px rgba(0,229,255,0.1)}
+.ob.short-sel{background:rgba(255,214,0,0.15);border-color:var(--gold);color:var(--gold);box-shadow: 0 0 10px rgba(255,214,0,0.1)}
 
 /* ── BUTTONS ── */
 .btn{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:7px 13px;border-radius:7px;border:none;cursor:pointer;transition:all 0.12s;letter-spacing:0.5px}
@@ -109,7 +112,6 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .stat-sub{font-size:10px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono',monospace}
 .green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}.blue{color:var(--accent)}
 
-
 /* ── CHART ── */
 .chart-sec{padding:20px 24px 0}
 .chart-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
@@ -135,7 +137,7 @@ svg.chart{width:100%;display:block;cursor:crosshair;}
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
-/* ── MONTHLY HEATMAP GRID (KOTAK KECIL) ── */
+/* ── MONTHLY HEATMAP GRID ── */
 .monthly-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -187,7 +189,7 @@ svg.chart{width:100%;display:block;cursor:crosshair;}
   line-height: 1;
 }
 
-/* Win Shading (Neon Green Intensity) */
+/* Win Shading */
 .month-box.m-win-1 {
   background: rgba(0, 230, 118, 0.05);
   border-color: rgba(0, 230, 118, 0.2);
@@ -202,7 +204,7 @@ svg.chart{width:100%;display:block;cursor:crosshair;}
   box-shadow: inset 0 0 10px rgba(0, 230, 118, 0.15);
 }
 
-/* Loss Shading (Neon Red Intensity) */
+/* Loss Shading */
 .month-box.m-loss-1 {
   background: rgba(255, 23, 68, 0.05);
   border-color: rgba(255, 23, 68, 0.2);
@@ -336,13 +338,12 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 </head>
 <body>
 
-
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-ico">📈</div>
   <div>
     <h1>Crypto <span>Compound</span></h1>
-    <p><span class="dot"></span>Trade Journal + Simulator · 10x Leverage</p>
+    <p><span class="dot"></span>Trade Journal + Simulator · Spot & Compound Edition</p>
   </div>
 </div>
 
@@ -360,24 +361,15 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <!-- Account Setup & Withdrawal -->
   <div class="sec">
     <div class="sec-title">⚙️ Account Management & 💸 Withdrawals</div>
-    <div class="grid3">
+    <div class="grid2">
       <div class="inp-g">
         <div class="inp-lbl">💰 Starting Capital</div>
         <div class="inp-w">
           <span class="inp-pre">$</span>
-          <input class="ni" id="j-cap" type="number" value="40" min="0.01" step="1" oninput="refreshJournal(); saveJ();">
+          <input class="ni" id="j-cap" type="number" placeholder="Enter Starting Capital (e.g. 100)" min="0.01" step="any" oninput="refreshJournal(); saveJ();">
           <span class="inp-suf">USDT</span>
         </div>
-        <div class="inp-hint">Your starting capital</div>
-      </div>
-      <div class="inp-g">
-        <div class="inp-lbl">⚡ Default Leverage</div>
-        <div class="inp-w">
-          <span class="inp-pre">×</span>
-          <input class="ni" id="j-lev" type="number" value="10" min="1" max="125" step="1" oninput="refreshJournal()">
-          <span class="inp-suf">x</span>
-        </div>
-        <div class="inp-hint">Adjustable per trade session</div>
+        <div class="inp-hint">Please enter starting capital to activate calculations</div>
       </div>
       <div class="inp-g">
         <div class="inp-lbl">💸 Record Withdrawal (WD)</div>
@@ -397,10 +389,14 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <div class="sec">
     <div class="sec-title">➕ Log New Trade</div>
 
-    <div class="grid3">
+    <div class="grid4">
       <div class="inp-g">
         <div class="inp-lbl">📅 Date</div>
         <input class="ti" id="j-date" type="date">
+      </div>
+      <div class="inp-g">
+        <div class="inp-lbl">🕒 Time</div>
+        <input class="ti" id="j-time" type="time">
       </div>
       <div class="inp-g">
         <div class="inp-lbl">💱 Pair</div>
@@ -416,7 +412,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
       </div>
     </div>
 
-    <!-- conditional row for screenshot and layout spacing -->
     <div class="grid2" style="margin-top: 12px; margin-bottom: 12px;">
       <div class="inp-g">
         <div class="inp-lbl">📷 Entry Chart Screenshot</div>
@@ -428,24 +423,37 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
       </div>
     </div>
 
-    <div class="inp-lbl" style="margin-bottom:8px">Outcome</div>
-    <div class="outcome-row">
-      <button class="ob" id="ob-w" onclick="selectOutcome('WIN')">✅ WIN</button>
-      <button class="ob" id="ob-l" onclick="selectOutcome('LOSS')">❌ LOSS</button>
+    <!-- Outcome & Position Type Selection Row -->
+    <div class="grid2" style="margin-top: 6px;">
+      <div>
+        <div class="inp-lbl" style="margin-bottom:8px">Outcome</div>
+        <div class="outcome-row">
+          <button class="ob" id="ob-w" onclick="selectOutcome('WIN')">✅ WIN</button>
+          <button class="ob" id="ob-l" onclick="selectOutcome('LOSS')">❌ LOSS</button>
+        </div>
+      </div>
+      <div>
+        <div class="inp-lbl" style="margin-bottom:8px">Position Type</div>
+        <div class="outcome-row">
+          <button class="ob" id="ob-long" onclick="selectPositionType('LONG')">🟢 LONG</button>
+          <button class="ob" id="ob-short" onclick="selectPositionType('SHORT')">🔴 SHORT</button>
+        </div>
+      </div>
     </div>
 
     <!-- Conditionally visible Psychology Tag (Loss Reason) -->
     <div class="inp-g" id="j-loss-reason-container" style="display:none; margin-bottom: 12px;">
       <div class="inp-lbl">🧠 Loss Reason / Psychology Tag</div>
       <select class="ti" id="j-loss-reason">
-        <option value="">-- Select Reason / Behavior --</option>
+        <option value="">-- Select Reason --</option>
         <option value="FOMO / Chasing Price">[FOMO / Chasing Price]</option>
         <option value="Valid Fakeout">[Valid Fakeout]</option>
         <option value="Revenge Market">[Revenge Market]</option>
+        <option value="SOP Mistake / Human Error">[SOP Mistake / Human Error]</option>
       </select>
     </div>
 
-    <div class="grid3">
+    <div class="grid2">
       <div class="inp-g">
         <div class="inp-lbl">📈 TP %</div>
         <div class="inp-w">
@@ -460,14 +468,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <span class="inp-pre">−</span>
           <input class="ni" id="j-sl" type="number" value="20" min="0.1" max="100" step="0.1">
           <span class="inp-suf">%</span>
-        </div>
-      </div>
-      <div class="inp-g">
-        <div class="inp-lbl">⚡ Leverage</div>
-        <div class="inp-w">
-          <span class="inp-pre">×</span>
-          <input class="ni" id="j-tlev" type="number" value="10" min="1" max="125" step="1">
-          <span class="inp-suf">x</span>
         </div>
       </div>
     </div>
@@ -514,7 +514,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-
   <!-- Equity Curve Chart -->
   <div class="chart-sec" id="j-chart">
     <div class="chart-title">📈 Equity Curve</div>
@@ -551,19 +550,25 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 
   <!-- Session & Psychology Analytics Breakdown -->
   <div class="chart-sec" id="j-analytics-sec">
-    <div class="chart-title">📊 Session & Psychology Analytics</div>
-    <div class="pie-row">
+    <div class="chart-title">📊 Session, Position & Psychology Analytics</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+      <!-- Card 1: Market Session -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Market Session Performance</div>
         <div id="j-session-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
+      <!-- Card 2: Position Types (Long vs Short) -->
+      <div class="pie-card" style="align-items: stretch; gap: 8px;">
+        <div class="pie-title" style="margin-bottom: 8px;">Position Type Performance</div>
+        <div id="j-position-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      <!-- Card 3: Psychology Losses -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Primary Loss Reasons (Psychology)</div>
         <div id="j-psychology-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
     </div>
   </div>
-
 
   <!-- Trade History -->
   <div style="padding:20px 24px 0">
@@ -574,7 +579,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <button class="btn btn-red" id="j-clear-btn" onclick="clearAll()" style="display:none;font-size:9px">🗑 Clear All</button>
       </div>
     </div>
-    <!-- Wrap container styled with internal scroll bounds -->
     <div class="history-wrap">
       <div id="j-list"></div>
     </div>
@@ -588,7 +592,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <div style="height:20px"></div>
 </div>
 
-
 <!-- ════════════════════════════════════════ -->
 <!--  PAGE: SIMULATOR                         -->
 <!-- ════════════════════════════════════════ -->
@@ -600,16 +603,8 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="inp-lbl">💰 Capital</div>
         <div class="inp-w">
           <span class="inp-pre">$</span>
-          <input class="ni" id="s-cap" type="number" value="40" min="1" step="1">
+          <input class="ni" id="s-cap" type="number" placeholder="Enter Capital (e.g. 100)" min="0.01" step="any">
           <span class="inp-suf">USDT</span>
-        </div>
-      </div>
-      <div class="inp-g">
-        <div class="inp-lbl">⚡ Leverage</div>
-        <div class="inp-w">
-          <span class="inp-pre">×</span>
-          <input class="ni" id="s-lev" type="number" value="10" min="1" max="125">
-          <span class="inp-suf">x</span>
         </div>
       </div>
       <div class="inp-g">
@@ -700,14 +695,13 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <!-- Final Balance & Statistics Grid -->
   <div id="s-stats" class="stats-grid" style="display:none"></div>
 
-
   <!-- Trade Log Table -->
   <div class="tbl-sec" id="s-tbl" style="display:none">
     <div class="chart-title">📋 Trade Log</div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th>#</th><th>Result</th><th>Bal Before</th><th>Position</th>
+          <th>#</th><th>Result</th><th>Bal Before</th>
           <th>Risk $</th><th>P&L</th><th>Bal After</th><th>Chg%</th><th>DD</th><th>Streak</th>
         </tr></thead>
         <tbody id="s-tbody"></tbody>
@@ -719,7 +713,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <div class="note" id="s-note" style="display:none"></div>
   <div style="height:20px"></div>
 </div>
-
 
 <!-- MODAL: Trade Detail -->
 <div class="modal-overlay" id="modal" onclick="closeModalClick(event)">
@@ -739,13 +732,25 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     <div id="confirm-modal-body" style="font-size:13px; color:var(--text); margin-bottom:20px; line-height:1.5; font-family:'JetBrains Mono',monospace;"></div>
     <div style="display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn btn-outline" onclick="closeConfirmModal()">Cancel</button>
-      <button class="btn btn-red" id="confirm-modal-yes" style="background:rgba(255,23,68,0.2); border:1px solid var(--red); color:var(--red)">PADAM SEMUA</button>
+      <button class="btn btn-red" id="confirm-modal-yes" style="background:rgba(255,23,68,0.2); border:1px solid var(--red); color:var(--red)">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Full Screen Screenshot Viewer -->
+<div class="modal-overlay" id="screenshot-modal" onclick="closeScreenshotModalClick(event)">
+  <div class="modal" style="max-width: 800px; padding: 20px; background: var(--surf); border: 1.5px solid var(--border);">
+    <div class="modal-title">
+      <span>Chart Screenshot</span>
+      <button class="modal-close" onclick="closeScreenshotModal()">✕</button>
+    </div>
+    <div style="width: 100%; display: flex; justify-content: center; align-items: center; background: #05070a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+      <img id="modal-screenshot-img" src="" style="max-width: 100%; max-height: 70vh; object-fit: contain; display: block;" alt="Chart Screenshot" />
     </div>
   </div>
 </div>
 
 <script>
-
 // ═══════════════════════════════════════════════
 //  TAB SWITCH
 // ═══════════════════════════════════════════════
@@ -756,38 +761,43 @@ function switchTab(t){
   });
 }
 
-
 // ═══════════════════════════════════════════════
 //  JOURNAL STATE & CONSTANTS
 // ═══════════════════════════════════════════════
 let jTrades = [];
 let selOutcome = 'WIN';
+let selPositionType = 'LONG';
 
 let monthlyActiveYear = new Date().getFullYear();
-let monthlySelectedMonth = null; // Filter state: null (no filter) or 0-11 (selected month index)
+let monthlySelectedMonth = null;
 let monthlyDataCache = [];
 const monthlyMonthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 function saveJ(){ 
   try{ 
-    localStorage.setItem('csj_v2',JSON.stringify(jTrades)); 
-    localStorage.setItem('cs_j_cap', document.getElementById('j-cap').value);
+    localStorage.setItem('csj_v4_nolev',JSON.stringify(jTrades)); 
+    localStorage.setItem('cs_j_cap_nolev_empty', document.getElementById('j-cap').value);
   }catch(e){} 
 }
 function loadJ(){
   try{ 
-    const d=localStorage.getItem('csj_v2'); 
+    const d=localStorage.getItem('csj_v4_nolev'); 
     if(d) jTrades=JSON.parse(d); 
   }catch(e){ jTrades=[]; }
   try{
-    const savedJCap = localStorage.getItem('cs_j_cap');
+    const savedJCap = localStorage.getItem('cs_j_cap_nolev_empty');
     if(savedJCap !== null) {
       document.getElementById('j-cap').value = savedJCap;
     }
   }catch(e){}
 }
 
-function gv(id){ const v=parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
+function gv(id){
+  const el = document.getElementById(id);
+  if (!el || el.value === "") return 0;
+  const v=parseFloat(el.value);
+  return isNaN(v)?0:v;
+}
 function gs(id){ return document.getElementById(id).value.trim(); }
 
 // ── SCREENSHOT FILE LOADING & BASE64 ENCODING ────────────────────────────
@@ -806,7 +816,6 @@ function handleScreenshotSelect(event) {
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
-      // Off-screen canvas to downscale screenshots preserving localStorage limits
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
@@ -827,7 +836,6 @@ function handleScreenshotSelect(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Compress to lightweight, readable JPEG at 70% quality
       attachedScreenshotBase64 = canvas.toDataURL('image/jpeg', 0.7);
       preview.src = attachedScreenshotBase64;
       preview.style.display = 'block';
@@ -842,39 +850,74 @@ function today(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+function nowTime(){
+  const d=new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 function selectOutcome(o){
   selOutcome=o;
   document.getElementById('ob-w').className='ob'+(o==='WIN'?' win-sel':'');
   document.getElementById('ob-l').className='ob'+(o==='LOSS'?' loss-sel':'');
   
-  // Toggle conditional Psychology Tag selection
   const lrContainer = document.getElementById('j-loss-reason-container');
   if (lrContainer) {
     lrContainer.style.display = o === 'LOSS' ? 'block' : 'none';
   }
 }
 
-// Sync default leverage from account setup
-document.getElementById('j-lev').addEventListener('input',()=>{
-  document.getElementById('j-tlev').value=document.getElementById('j-lev').value;
-});
+function selectPositionType(type){
+  selPositionType = type;
+  document.getElementById('ob-long').className='ob'+(type==='LONG'?' long-sel':'');
+  document.getElementById('ob-short').className='ob'+(type==='SHORT'?' short-sel':'');
+}
 
+function showConfirm(msg, onYes) {
+  document.getElementById('confirm-modal-body').textContent = msg;
+  const yesBtn = document.getElementById('confirm-modal-yes');
+  yesBtn.onclick = () => {
+    onYes();
+    closeConfirmModal();
+  };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+
+function closeConfirmModalClick(e) {
+  if (e.target === document.getElementById('confirm-modal')) closeConfirmModal();
+}
+
+function clearAll() {
+  showConfirm("Are you completely sure you want to delete all logged trade records? This action cannot be undone.", () => {
+    jTrades = [];
+    saveJ();
+    refreshJournal();
+  });
+}
 
 function addTrade(){
-  const capital=Math.max(0.01,gv('j-cap'));
+  const capital = gv('j-cap');
+  if (capital <= 0) {
+    showConfirm("Please specify a Starting Capital greater than 0 before logging a trade.", () => {
+      document.getElementById('j-cap').focus();
+    });
+    return;
+  }
   const tp=Math.max(0.001,gv('j-tp'))/100;
   const sl=Math.max(0.001,Math.min(100,gv('j-sl')))/100;
-  const lev=Math.max(1,gv('j-tlev'));
   const date=gs('j-date')||today();
+  const time=gs('j-time')||nowTime();
   const pair=(gs('j-pair')||'UNKNOWN').toUpperCase();
   const note=gs('j-note');
   const win=selOutcome==='WIN';
+  const positionType = selPositionType || 'LONG';
   
-  // Advanced features: Session Analytics & Psychology Tagging
   const session = document.getElementById('j-session').value || 'Asia';
   const lossReason = !win ? document.getElementById('j-loss-reason').value : '';
 
-  // compute running balance before this trade (respecting withdrawals)
   let bal=capital;
   for(const t of jTrades){
     if (t.type === 'WD') {
@@ -890,28 +933,29 @@ function addTrade(){
   jTrades.push({
     id:Date.now(),
     date,
+    time,
     pair,
     win,
     tp,
     sl,
-    lev,
     pnl,
     balBefore,
     balAfter,
     note,
     session,
     lossReason,
+    positionType,
     screenshot: attachedScreenshotBase64
   });
   saveJ();
 
-  // reset form
   document.getElementById('j-pair').value='';
   document.getElementById('j-note').value='';
   document.getElementById('j-date').value=today();
+  document.getElementById('j-time').value=nowTime();
   document.getElementById('j-loss-reason').value='';
+  selectPositionType('LONG');
   
-  // Reset screenshot states
   document.getElementById('j-screenshot').value = '';
   document.getElementById('j-screenshot-preview').style.display = 'none';
   document.getElementById('j-screenshot-preview').src = "";
@@ -920,13 +964,17 @@ function addTrade(){
   refreshJournal();
 }
 
-// RECORD WITHDRAWAL (WD) ──────────────────────────────────
 function addWithdrawal() {
   const amount = parseFloat(document.getElementById('j-wd-amt').value);
   if (isNaN(amount) || amount <= 0) return;
 
-  // Compute actual rolling balance to guard against overdraft
-  const capital = Math.max(0.01, gv('j-cap'));
+  const capital = gv('j-cap');
+  if (capital <= 0) {
+    showConfirm("Please specify a Starting Capital before recording withdrawals.", () => {
+      document.getElementById('j-cap').focus();
+    });
+    return;
+  }
   let bal = capital;
   for (const t of jTrades) {
     if (t.type === 'WD') {
@@ -949,9 +997,11 @@ function addWithdrawal() {
 function executeWD(amount) {
   if (amount <= 0) return;
   const date = today();
+  const time = nowTime();
   jTrades.push({
     id: Date.now(),
     date: date,
+    time: time,
     pair: 'WITHDRAWAL',
     type: 'WD',
     wdAmount: amount,
@@ -962,27 +1012,61 @@ function executeWD(amount) {
   refreshJournal();
 }
 
-
 function deleteTrade(id){
   jTrades=jTrades.filter(t=>t.id!==id);
   saveJ(); refreshJournal();
 }
 
 function refreshJournal(){
-  const capital=Math.max(0.01,gv('j-cap'));
+  const capital = gv('j-cap');
   const n=jTrades.length;
 
   if (n === 0) {
     monthlySelectedMonth = null;
   }
 
-  // recompute all running balances (handling withdrawals seamlessly)
+  // Handle empty or zero starting capital state gracefully
+  if (capital <= 0) {
+    document.getElementById('j-bal-val').textContent = '⚠️ Set Capital';
+    document.getElementById('j-bal-sub').textContent = 'Please enter Starting Capital above to activate dashboard.';
+    document.getElementById('j-ret').textContent = '—';
+    document.getElementById('j-ret').style.color = 'var(--dim)';
+    document.getElementById('j-wl').textContent = '—';
+    document.getElementById('j-total-wd').textContent = '';
+    
+    document.getElementById('j-stats').innerHTML = `
+      <div style="grid-column: 1/-1; background: var(--surf2); padding: 32px 24px; text-align: center; border-radius: 8px; border: 1.5px dashed var(--border); color: var(--dim); font-size: 13px; font-family: 'JetBrains Mono', monospace;">
+        ⚠️ ENTER STARTING CAPITAL TO COMPUTE PERFORMANCE DASHBOARD & METRICS
+      </div>`;
+    
+    document.getElementById('j-svg').innerHTML = `
+      <text x="450" y="85" fill="var(--dim)" font-size="12" font-family="'JetBrains Mono',monospace" text-anchor="middle">ENTER CAPITAL ABOVE TO VIEW EQUITY CURVE</text>`;
+    
+    document.getElementById('j-daily-svg').innerHTML = `
+      <text x="450" y="85" fill="var(--dim)" font-size="12" font-family="'JetBrains Mono',monospace" text-anchor="middle">ENTER CAPITAL ABOVE TO VIEW DAILY PERFORMANCE</text>`;
+    
+    document.getElementById('j-monthly-grid').innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; color: var(--dim); font-size: 11px; padding: 12px 0;">
+        Enter capital to view monthly heatmaps
+      </div>`;
+    
+    document.getElementById('j-session-stats-container').innerHTML = '';
+    document.getElementById('j-position-stats-container').innerHTML = '';
+    document.getElementById('j-psychology-stats-container').innerHTML = '';
+    document.getElementById('j-streaks').innerHTML = '';
+    
+    drawPieChart('j-pie-wl', 'j-pie-wl-leg', []);
+    drawPieChart('j-pie-pnl', 'j-pie-pnl-leg', []);
+    
+    renderHistoryList([]);
+    return;
+  }
+
   let bal=capital, peak=capital;
   let maxWS=0,maxLS=0,tW=0,tL=0;
   let totalWithdrawn = 0;
   const comp=[];
   
-  // Structures to hold analytics
   const sesData = {
     Asia: { wins: 0, losses: 0, pnl: 0 },
     Europe: { wins: 0, losses: 0, pnl: 0 },
@@ -990,11 +1074,18 @@ function refreshJournal(){
   };
   const psychCounts = {
     "FOMO / Chasing Price": 0,
-    "Slippage / Market Gap": 0,
     "Valid Fakeout": 0,
-    "SOP Mistake / Human Error": 0,
-    "Revenge Market": 0
+    "Revenge Market": 0,
+    "SOP Mistake / Human Error": 0
   };
+  
+  let longTradesCount = 0;
+  let longWinsCount = 0;
+  let longPnL = 0;
+  let shortTradesCount = 0;
+  let shortWinsCount = 0;
+  let shortPnL = 0;
+  
   let activeLossesCount = 0;
 
   for(const t of jTrades){
@@ -1006,7 +1097,6 @@ function refreshJournal(){
     } else {
       pnl = t.win ? bb * t.tp : -(bb * t.sl);
       
-      // Feed Session Analytics Data
       const s = t.session || 'Asia';
       if (sesData[s]) {
         if (t.win) sesData[s].wins++;
@@ -1014,7 +1104,17 @@ function refreshJournal(){
         sesData[s].pnl += pnl;
       }
       
-      // Feed Psychology Tagging Data
+      const posType = t.positionType || 'LONG';
+      if (posType === 'LONG') {
+        longTradesCount++;
+        longPnL += pnl;
+        if (t.win) longWinsCount++;
+      } else {
+        shortTradesCount++;
+        shortPnL += pnl;
+        if (t.win) shortWinsCount++;
+      }
+      
       if (!t.win) {
         activeLossesCount++;
         if (t.lossReason && psychCounts[t.lossReason] !== undefined) {
@@ -1026,14 +1126,12 @@ function refreshJournal(){
     if(bal>peak) peak=bal;
     const dd=((peak-bal)/peak)*100;
 
-    // Track streaks and statistics exclusively for valid trade entries
     if (t.type !== 'WD') {
       if(t.win){tW++;tL=0;maxWS=Math.max(maxWS,tW);}else{tL++;tW=0;maxLS=Math.max(maxLS,tL);}
     }
     comp.push({...t,bb,pnl,ba:bal,dd,peak});
   }
 
-  // Dashboard components remain beautifully displayed at all times
   document.getElementById('j-bal-hero').style.display='flex';
   document.getElementById('j-stats').style.display='grid';
   document.getElementById('j-pie').style.display='block';
@@ -1048,8 +1146,6 @@ function refreshJournal(){
   document.getElementById('j-export-btn').style.display=n>0?'inline-block':'none';
 
   const final=comp.length > 0 ? comp[n-1].ba : capital;
-  
-  // Total return based on actual performance (adds withdrawn amount back to reflect accurate growth)
   const ret= capital > 0 ? ((final + totalWithdrawn - capital)/capital)*100 : 0;
   
   const wins=jTrades.filter(t=> t.type !== 'WD' && t.win).length;
@@ -1062,7 +1158,9 @@ function refreshJournal(){
   const avgW=wins>0?comp.filter(t=> t.type !== 'WD' && t.win).reduce((s,t)=>s+t.pnl,0)/wins:0;
   const avgL=losses>0?Math.abs(comp.filter(t=> t.type !== 'WD' && !t.win).reduce((s,t)=>s+t.pnl,0)/losses):0;
 
-  // Hero Header Balance Update
+  const longWinRate = longTradesCount > 0 ? (longWinsCount / longTradesCount) * 100 : 0;
+  const shortWinRate = shortTradesCount > 0 ? (shortWinsCount / shortTradesCount) * 100 : 0;
+
   document.getElementById('j-bal-val').textContent=`$${final.toFixed(2)}`;
   document.getElementById('j-bal-sub').textContent=`${numTrades} trades · started $${capital.toFixed(2)}`;
   const retEl=document.getElementById('j-ret');
@@ -1070,26 +1168,23 @@ function refreshJournal(){
   retEl.style.color=ret>=0?'var(--green)':'var(--red)';
   document.getElementById('j-wl').textContent=`${wins}W / ${losses}L`;
   
-  // Display accumulated withdrawals inside balance hero
   const wdEl = document.getElementById('j-total-wd');
   if (wdEl) {
     wdEl.textContent = totalWithdrawn > 0 ? `Total WD: -$${totalWithdrawn.toFixed(2)}` : '';
   }
 
-  // Stats Grid - Including Withdrawal Tracking card
   document.getElementById('j-stats').innerHTML=[
     {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,  sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
     {label:'Win Rate',        value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                         cls:'blue'},
+    {label:'Long / Short WR', value:`${longWinRate.toFixed(0)}% / ${shortWinRate.toFixed(0)}%`, sub:`L:${longTradesCount} trades · S:${shortTradesCount} trades`, cls:'gold'},
     {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
-    {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                 sub:'All-time high',                                  cls:'gold'},
-    {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                              cls:'green'},
+    {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                  sub:'All-time high',                                  cls:'gold'},
+    {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                               cls:'green'},
     {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                             cls:'red'},
-    {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                 sub:`Avg Loss: -$${avgL.toFixed(2)}`,                   cls:'green'},
-    {label:'Total Trades',    value:`${numTrades}`,                         sub:`${wins} wins · ${losses} losses`,               cls:'blue'},
-    {label:'Total Withdrawn', value:`$${totalWithdrawn.toFixed(2)}`,        sub:`${numWD} withdrawals`,                           cls:'red'},
+    {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                  sub:`Avg Loss: -$${avgL.toFixed(2)}`,                    cls:'green'},
+    {label:'Total Withdrawn', value:`$${totalWithdrawn.toFixed(2)}`,        sub:`${numWD} withdrawals`,                            cls:'red'},
   ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
-  // Pie Charts
   drawPieChart('j-pie-wl', 'j-pie-wl-leg', [
     { label: 'Wins', value: wins, color: 'var(--green)', suffix: ' trades', dec: 0 },
     { label: 'Losses', value: losses, color: 'var(--red)', suffix: ' trades', dec: 0 }
@@ -1102,10 +1197,8 @@ function refreshJournal(){
     { label: 'Gross Loss', value: grossLoss, color: 'var(--red)', prefix: '$', dec: 2 }
   ]);
 
-  // Equity curve chart (reflects withdrawals on portfolio balance)
   drawChart('j-svg',capital,comp.map(t=>t.ba),ret,900,160);
 
-  // Filter trades dynamically for daily chart (strictly excludes WD types from daily statistics)
   let dailyTradesSource = comp.filter(t => t.type !== 'WD');
   if (monthlySelectedMonth !== null) {
     dailyTradesSource = dailyTradesSource.filter(t => {
@@ -1115,13 +1208,9 @@ function refreshJournal(){
     });
   }
 
-  // Draw Daily P&L Bar Chart
   drawDailyBarChart('j-daily-svg', dailyTradesSource);
-
-  // Update monthly grid and breakdowns
   renderMonthlyGrid();
 
-  // Render Market Session Analytics Breakdown HTML
   let sessionHTML = '';
   Object.keys(sesData).forEach(s => {
     const data = sesData[s];
@@ -1151,7 +1240,48 @@ function refreshJournal(){
   });
   document.getElementById('j-session-stats-container').innerHTML = sessionHTML;
 
-  // Render Psychology Mistakes Breakdown HTML
+  const longPnlColor = longPnL >= 0 ? 'var(--green)' : 'var(--red)';
+  const longPnlSign = longPnL >= 0 ? '+' : '';
+  const shortPnlColor = shortPnL >= 0 ? 'var(--green)' : 'var(--red)';
+  const shortPnlSign = shortPnL >= 0 ? '+' : '';
+  
+  let positionHTML = `
+    <div style="background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--accent);">🟢 LONG Positions</div>
+        <div style="font-size: 10px; color: var(--dim); font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+          Record: ${longWinsCount}W / ${longTradesCount - longWinsCount}L (${longTradesCount} trades)
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: ${longPnlColor};">
+          ${longPnlSign}$${longPnL.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+        </div>
+        <div style="font-size: 10px; color: var(--green); font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+          Avg WR: ${longWinRate.toFixed(1)}%
+        </div>
+      </div>
+    </div>
+    
+    <div style="background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--gold);">🔴 SHORT Positions</div>
+        <div style="font-size: 10px; color: var(--dim); font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+          Record: ${shortWinsCount}W / ${shortTradesCount - shortWinsCount}L (${shortTradesCount} trades)
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: ${shortPnlColor};">
+          ${shortPnlSign}$${shortPnL.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+        </div>
+        <div style="font-size: 10px; color: var(--green); font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+          Avg WR: ${shortWinRate.toFixed(1)}%
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('j-position-stats-container').innerHTML = positionHTML;
+
   const sortedMistakes = Object.entries(psychCounts).sort((a, b) => b[1] - a[1]);
   let psychHTML = '';
   if (activeLossesCount === 0) {
@@ -1189,22 +1319,26 @@ function refreshJournal(){
   }
   document.getElementById('j-psychology-stats-container').innerHTML = psychHTML;
 
-  // Streaks
   renderStreaks('j-streaks',maxWS,maxLS,comp);
 
-  // Note
-  document.getElementById('j-note-box').innerHTML=`
+  document.getElementById('j-note-box').innerHTML = `
     <strong>Journal:</strong> ${numTrades} trades · ${wins}W ${losses}L · ${(numTrades > 0 ? wins/numTrades*100 : 0).toFixed(0)}% WR · Return ${ret>=0?'+':''}${ret.toFixed(2)}%<br>
     <span style="color:#3a4455">💡 Touch or move your finger on the equity curve, monthly grid, and daily bar chart to filter and inspect trading performance.</span>`;
 
-  // Render list (Trade History update with screenshot icons)
+  renderHistoryList(comp);
+}
+
+function renderHistoryList(comp) {
   const listEl=document.getElementById('j-list');
-  if(n===0){
+  const n=jTrades.length;
+  if(n===0 || comp.length === 0){
     listEl.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">No trades logged yet</div><div class="empty-sub">Please log your first trade using the form above</div></div>`;
     return;
   }
+  
   listEl.innerHTML='<div class="trade-list">'+[...comp].reverse().map(t=>{
     const dateFmt=t.date?t.date.slice(5).replace('-','/'):'-';
+    const timeFmt=t.time ? ` · ${t.time}` : '';
     
     if (t.type === 'WD') {
       const pStr = `-$${t.wdAmount.toFixed(2)}`;
@@ -1213,7 +1347,7 @@ function refreshJournal(){
         <div class="to" style="background:rgba(136,146,164,0.15); color:var(--dim); border:1px solid rgba(136,146,164,0.25)">WD</div>
         <div class="ti-info">
           <div class="ti-pair" style="color:var(--dim)">${t.pair}</div>
-          <div class="ti-meta" style="color:var(--dim)">${dateFmt}${t.note?' · '+t.note:''}</div>
+          <div class="ti-meta" style="color:var(--dim)">${dateFmt}${timeFmt}${t.note?' · '+t.note:''}</div>
         </div>
         <div>
           <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
@@ -1227,6 +1361,11 @@ function refreshJournal(){
       const sessionLabel = t.session ? ` · ${t.session}` : ' · Asia';
       const tagLabel = (!t.win && t.lossReason) ? ` · <span style="color:var(--red); font-size:9px;">[${t.lossReason}]</span>` : '';
       
+      const posType = t.positionType || 'LONG';
+      const posBadgeColor = posType === 'LONG' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 214, 0, 0.15)';
+      const posTextColor = posType === 'LONG' ? 'var(--accent)' : 'var(--gold)';
+      const posBadge = `<span style="font-size: 8px; padding: 2px 6px; border-radius: 4px; background: ${posBadgeColor}; color: ${posTextColor}; margin-left: 6px; font-weight:700;">${posType}</span>`;
+
       const screenshotIcon = t.screenshot ? `
         <svg onclick="event.stopPropagation(); openScreenshotLightbox('${t.screenshot}')" style="cursor: pointer; width: 15px; height: 15px; fill: ${pCol}; margin-left: 6px; vertical-align: middle; transition: transform 0.15s, opacity 0.15s; opacity: 0.85;" onmouseover="this.style.transform='scale(1.2)'; this.style.opacity='1';" onmouseout="this.style.transform='scale(1)'; this.style.opacity='0.85';" viewBox="0 0 24 24" title="View Chart Screenshot">
           <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
@@ -1238,9 +1377,10 @@ function refreshJournal(){
         <div class="ti-info">
           <div style="display: flex; align-items: center; gap: 4px;">
             <div class="ti-pair">${t.pair}</div>
+            ${posBadge}
             ${screenshotIcon}
           </div>
-          <div class="ti-meta">${dateFmt} · ${t.lev}x · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
+          <div class="ti-meta">${dateFmt}${timeFmt} · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
         </div>
         <div>
           <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
@@ -1252,18 +1392,15 @@ function refreshJournal(){
   }).join('')+'</div>';
 }
 
-// ── PROCESS AND RENDER MONTHLY GRID (Excludes WD from Heatmap metrics) ──────
 function renderMonthlyGrid() {
   let years = [...new Set(jTrades.map(t => t.date ? parseInt(t.date.substring(0, 4)) : new Date().getFullYear()))];
   if (years.length === 0) years = [new Date().getFullYear()];
   years.sort((a, b) => a - b);
 
-  // Auto fallback to latest active year
   if (!years.includes(monthlyActiveYear)) {
     monthlyActiveYear = years[years.length - 1];
   }
 
-  // Render Year selector UI
   document.getElementById('j-monthly-year-val').textContent = monthlyActiveYear;
   const currentYearIdx = years.indexOf(monthlyActiveYear);
   document.getElementById('j-m-prev-yr').style.opacity = currentYearIdx > 0 ? "1" : "0.3";
@@ -1271,7 +1408,6 @@ function renderMonthlyGrid() {
   document.getElementById('j-m-next-yr').style.opacity = currentYearIdx < years.length - 1 ? "1" : "0.3";
   document.getElementById('j-m-next-yr').style.pointerEvents = currentYearIdx < years.length - 1 ? "auto" : "none";
 
-  // Group 12 months for selected year
   const monthsData = Array.from({ length: 12 }, (_, i) => ({
     monthIdx: i,
     pnl: 0,
@@ -1292,7 +1428,7 @@ function renderMonthlyGrid() {
     }
   });
 
-  monthlyDataCache = monthsData; // Keep reference for HUD events
+  monthlyDataCache = monthsData;
 
   const activeMonthlyPnls = monthsData.filter(m => m.count > 0).map(m => Math.abs(m.pnl));
   const maxAbsMonthlyPnl = activeMonthlyPnls.length > 0 ? Math.max(...activeMonthlyPnls) : 1;
@@ -1319,8 +1455,6 @@ function renderMonthlyGrid() {
     }
 
     const valueStr = m.count > 0 ? (m.pnl >= 0 ? `+$${m.pnl.toFixed(0)}` : `-$${Math.abs(m.pnl).toFixed(0)}`) : "—";
-    
-    // Toggle active monthly filter border styling
     const isSelected = monthlySelectedMonth === i;
     const selectClass = isSelected ? 'selected-filter' : '';
 
@@ -1337,7 +1471,6 @@ function renderMonthlyGrid() {
   }).join('');
 }
 
-// ── INTERACTIVE MONTHLY FILTER CLICK ────────────────────────────
 function selectMonthlyFilter(idx) {
   if (monthlySelectedMonth === idx) {
     monthlySelectedMonth = null; 
@@ -1347,7 +1480,6 @@ function selectMonthlyFilter(idx) {
   refreshJournal();
 }
 
-// ── INTERACTIVE MONTHLY HUD SENSORS ─────────────────────────────
 function showMonthlyHUD(idx) {
   const m = monthlyDataCache[idx];
   const hud = document.getElementById('j-monthly-hud');
@@ -1396,8 +1528,7 @@ function changeMonthlyYear(dir) {
 
 function showDetail(id){
   const t=jTrades.find(x=>x.id===id); if(!t) return;
-  // recompute this trade's running balance (considering withdrawals)
-  const capital=Math.max(0.01,gv('j-cap'));
+  const capital = gv('j-cap');
   let bal=capital;
   for(const x of jTrades){
     if(x.id===id) break;
@@ -1416,7 +1547,7 @@ function showDetail(id){
     document.getElementById('modal-body').innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
         ${[
-          ['Date', t.date || '—'], ['Type', 'Withdrawal'],
+          ['Date', t.date || '—'], ['Time', t.time || '—'], ['Type', 'Withdrawal'],
           ['Bal Before', '$' + balBefore.toFixed(2)], ['WD Amount', '$' + t.wdAmount.toFixed(2)],
           ['Bal After', '$' + balAfter.toFixed(2)], ['ROI Impact', (pnl / balBefore * 100).toFixed(2) + '%'],
         ].map(([k,v])=>`<div style="background:var(--surf2);border-radius:8px;padding:11px">
@@ -1432,10 +1563,10 @@ function showDetail(id){
     const pnl=t.win?balBefore*t.tp:-(balBefore*t.sl);
     const balAfter=Math.max(0.001,balBefore+pnl);
     
-    // Setup modal rows list dynamically to support optional parameters cleanly
     const detailsGrid = [
-      ['Date', t.date || '—'], ['Pair', t.pair],
-      ['Outcome', t.win ? 'WIN' : 'LOSS'], ['Leverage', t.lev + 'x'],
+      ['Date', t.date || '—'], ['Time', t.time || '—'], ['Pair', t.pair],
+      ['Position Type', t.positionType || 'LONG'],
+      ['Outcome', t.win ? 'WIN' : 'LOSS'],
       ['Take Profit', (t.tp * 100).toFixed(1) + '%'], ['Stop Loss', (t.sl * 100).toFixed(1) + '%'],
       ['Market Session', t.session || 'Asia'],
       ['Bal Before', '$' + balBefore.toFixed(2)], ['P&L', (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2)],
@@ -1443,10 +1574,9 @@ function showDetail(id){
     ];
 
     if (!t.win && t.lossReason) {
-      detailsGrid.splice(6, 0, ['Loss Reason', t.lossReason]);
+      detailsGrid.splice(7, 0, ['Loss Reason', t.lossReason]);
     }
     
-    // Interactive Thumbnail inside modal detail block
     if (t.screenshot) {
       detailsGrid.push([
         'Chart Screenshot', 
@@ -1473,7 +1603,6 @@ function showDetail(id){
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function closeModalClick(e){ if(e.target===document.getElementById('modal')) closeModal(); }
 
-// ── LIGHTBOX MODAL EVENT HANDLERS ───────────────────────────────────────
 function openScreenshotLightbox(base64Source) {
   document.getElementById('modal-screenshot-img').src = base64Source;
   document.getElementById('screenshot-modal').classList.add('open');
@@ -1491,19 +1620,19 @@ function closeScreenshotModalClick(e) {
 }
 
 function exportCSV(){
-  const capital=Math.max(0.01,gv('j-cap'));
+  const capital = gv('j-cap');
   let bal=capital;
-  let rows=[['#','Date','Pair','Outcome','Leverage','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
+  let rows=[['#','Date','Time','Pair','Position Type','Outcome','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
   jTrades.forEach((t,i)=>{
     const bb=bal;
     let pnl = 0;
     let outcome = '';
     let tpStr = '';
     let slStr = '';
-    let levStr = '';
     let sessionStr = '';
     let lossReasonStr = '';
     let screenshotStatus = 'No';
+    let posTypeStr = '';
 
     if (t.type === 'WD') {
       pnl = -t.wdAmount;
@@ -1515,18 +1644,19 @@ function exportCSV(){
       outcome = t.win?'WIN':'LOSS';
       tpStr = (t.tp*100).toFixed(1)+'%';
       slStr = (t.sl*100).toFixed(1)+'%';
-      levStr = t.lev+'x';
       sessionStr = t.session || 'Asia';
       lossReasonStr = !t.win ? (t.lossReason || '') : '';
       screenshotStatus = t.screenshot ? 'Yes' : 'No';
+      posTypeStr = t.positionType || 'LONG';
     }
 
     rows.push([
       i+1,
       t.date,
+      t.time || '—',
       t.pair,
+      posTypeStr,
       outcome,
-      levStr,
       tpStr,
       slStr,
       bb.toFixed(2),
@@ -1546,7 +1676,6 @@ function exportCSV(){
   a.click();
 }
 
-
 // ═══════════════════════════════════════════════
 //  SIMULATOR
 // ═══════════════════════════════════════════════
@@ -1554,8 +1683,9 @@ let seq=[], simN=100;
 
 function sv(id){ const v=parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
 function sParams(){
+  const capVal = sv('s-cap');
   return{
-    CAP:Math.max(0.01,sv('s-cap')),LEV:Math.min(125,Math.max(1,sv('s-lev'))),
+    CAP: capVal <= 0 ? 0 : capVal,
     WR:Math.min(99,Math.max(1,sv('s-wr')))/100,
     TP:Math.min(500,Math.max(0.01,sv('s-tp')))/100,
     SL:Math.min(100,Math.max(0.01,sv('s-sl')))/100,
@@ -1563,9 +1693,17 @@ function sParams(){
   };
 }
 
-// EV calculation
 function updateEV(){
   const p=sParams();
+  if (p.CAP <= 0) {
+    document.getElementById('s-rr').textContent = '—';
+    document.getElementById('s-ev').textContent = '—';
+    document.getElementById('s-ev').style.color = 'var(--dim)';
+    document.getElementById('s-exp').textContent = '—';
+    document.getElementById('s-be').textContent = '—';
+    document.getElementById('s-seq-info').textContent = 'Please enter Capital to compute Simulator Sequence';
+    return;
+  }
   const ev=(p.WR*p.TP)-((1-p.WR)*p.SL);
   const rr=p.TP/p.SL;
   const be=p.SL/(p.TP+p.SL);
@@ -1579,11 +1717,11 @@ function updateEV(){
   document.getElementById('s-seq-info').textContent=tot?`${tot} trades · ${w}W ${tot-w}L · actual WR ${(w/tot*100).toFixed(0)}%`:'—';
 }
 
-['s-cap','s-lev','s-wr','s-tp','s-sl','s-n'].forEach(id=>{
+['s-cap','s-wr','s-tp','s-sl','s-n'].forEach(id=>{
   document.getElementById(id).addEventListener('input',()=>{
     if (id === 's-cap') {
       try {
-        localStorage.setItem('cs_s_cap', document.getElementById('s-cap').value);
+        localStorage.setItem('cs_s_cap_nolev_empty', document.getElementById('s-cap').value);
       } catch(e) {}
     }
     updateEV();
@@ -1604,9 +1742,32 @@ function genSeq(n,wr){
   return out;
 }
 
-function applyWR(){ const p=sParams();simN=p.N;seq=genSeq(simN,p.WR);renderSeq();updateEV(); }
-function reShuf() { const p=sParams();simN=p.N;seq=genSeq(simN,p.WR);renderSeq();updateEV(); }
-function setAll(w){ const p=sParams();simN=p.N;seq=Array(simN).fill(w);renderSeq();updateEV(); }
+function applyWR(){ 
+  const p=sParams(); 
+  if (p.CAP <= 0) return;
+  simN=p.N; 
+  seq=genSeq(simN,p.WR); 
+  renderSeq(); 
+  updateEV(); 
+}
+
+function reShuf() { 
+  const p=sParams(); 
+  if (p.CAP <= 0) return;
+  simN=p.N; 
+  seq=genSeq(simN,p.WR); 
+  renderSeq(); 
+  updateEV(); 
+}
+
+function setAll(w){ 
+  const p=sParams(); 
+  if (p.CAP <= 0) return;
+  simN=p.N; 
+  seq=Array(simN).fill(w); 
+  renderSeq(); 
+  updateEV(); 
+}
 
 function renderSeq(){
   document.getElementById('seq-grid').innerHTML=seq.map((w,i)=>
@@ -1623,6 +1784,22 @@ function toggleSeq(i){
 
 function runSim(){
   const p=sParams();
+  if (p.CAP <= 0) {
+    document.getElementById('s-stats').style.display='grid';
+    document.getElementById('s-stats').innerHTML = `
+      <div style="grid-column: 1/-1; background: var(--surf2); padding: 32px 24px; text-align: center; border-radius: 8px; border: 1.5px dashed var(--border); color: var(--red); font-size: 13px; font-family: 'JetBrains Mono', monospace;">
+        ⚠️ PLEASE SPECIFY SIMULATOR CAPITAL ABOVE TO RUN MONTE CARLO SIMULATIONS
+      </div>`;
+    
+    // Hide simulator graphics
+    document.getElementById('s-chart').style.display='none';
+    document.getElementById('s-pie').style.display='none';
+    document.getElementById('s-tbl').style.display='none';
+    document.getElementById('s-streaks').style.display='none';
+    document.getElementById('s-note').style.display='none';
+    return;
+  }
+
   if(seq.length!==simN) applyWR();
   const trades=[];
   let bal=p.CAP,peak=p.CAP,maxWS=0,maxLS=0,tW=0,tL=0,curS=0,curT=null;
@@ -1634,7 +1811,7 @@ function runSim(){
     const dd=((peak-bal)/peak)*100,chg=(pnl/bb)*100;
     if(win){tW++;tL=0;maxWS=Math.max(maxWS,tW);}else{tL++;tW=0;maxLS=Math.max(maxLS,tL);}
     if(curT===(win?'W':'L'))curS++;else{curS=1;curT=win?'W':'L';}
-    trades.push({n:i+1,win,bb,pnl,ba:bal,chg,dd,st:curT,sc:curS,peak,pos:bb*p.LEV,risk:bb*p.SL});
+    trades.push({n:i+1,win,bb,pnl,ba:bal,chg,dd,st:curT,sc:curS,peak,risk:bb*p.SL});
   }
 
   const wins=trades.filter(t=>t.win).length,losses=simN-wins;
@@ -1645,15 +1822,12 @@ function runSim(){
   const avgL=losses>0?Math.abs(trades.filter(t=>!t.win).reduce((s,t)=>s+t.pnl,0)/losses):0;
   const actWR=(wins/simN*100).toFixed(1);
 
-  // Show simulator elements
   ['s-stats','s-pie','s-chart','s-tbl','s-streaks','s-note'].forEach(id=>{
     document.getElementById(id).style.display=id==='s-streaks'?'grid':'block';
   });
 
-  // Render Equity Curve
   drawChart('s-svg',p.CAP,trades.map(t=>t.ba),ret,900,160);
 
-  // Render Simulator Pie Chart
   drawPieChart('s-pie-wl', 's-pie-wl-leg', [
     { label: 'Wins', value: wins, color: 'var(--green)', suffix: ' trades', dec: 0 },
     { label: 'Losses', value: losses, color: 'var(--red)', suffix: ' trades', dec: 0 }
@@ -1666,7 +1840,6 @@ function runSim(){
     { label: 'Gross Loss', value: simGrossLoss, color: 'var(--red)', prefix: '$', dec: 2 }
   ]);
 
-  // Update statistics dashboard
   document.getElementById('s-stats').innerHTML=[
     {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                  sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
     {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,            sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
@@ -1685,7 +1858,6 @@ function runSim(){
       <td>${t.n}</td>
       <td><span class="badge ${t.win?'bw':'bl'}">${t.win?'WIN':'LOSS'}</span></td>
       <td>$${t.bb.toFixed(2)}</td>
-      <td>$${t.pos.toFixed(2)}</td>
       <td>$${t.risk.toFixed(2)}</td>
       <td class="${pc}">${pStr}</td>
       <td>$${t.ba.toFixed(2)}</td>
@@ -1699,13 +1871,12 @@ function runSim(){
 
   const ev=(wins/simN*p.TP)-(losses/simN*p.SL);
   document.getElementById('s-note').innerHTML=`
-    <strong>Setup:</strong> $${p.CAP} · ${p.LEV}x leverage · TP ${(p.TP*100).toFixed(0)}% · SL ${(p.SL*100).toFixed(0)}% · RR ${(p.TP/p.SL).toFixed(2)}:1<br>
+    <strong>Setup:</strong> $${p.CAP} · TP ${(p.TP*100).toFixed(0)}% · SL ${(p.SL*100).toFixed(0)}% · RR ${(p.TP/p.SL).toFixed(2)}:1<br>
     <strong>EV per trade:</strong> ${ev>=0?'+':''}${(ev*100).toFixed(2)}% &nbsp;|&nbsp; <strong>Actual WR:</strong> ${actWR}%<br>
     <span style="color:#3a4455">💡 Touch or move your finger on the equity curve to inspect performance metrics of each simulated run.</span>`;
 }
 
-
-// ── PIE CHART ────────────────────────────────────────────────
+// ── PIE CHART RENDERING ENGINE ───────────────────────────────
 function drawPieChart(svgId, legId, slices){
   const total = slices.reduce((s,x)=>s+Math.max(0,x.value),0);
   const svgEl = document.getElementById(svgId);
@@ -1714,17 +1885,19 @@ function drawPieChart(svgId, legId, slices){
   const cx=80, cy=80, R=62, iR=38; 
   
   if(total===0){
-    // Render elegant neutral empty cyberpunk ring
     svgEl.innerHTML = `
       <path d="M${cx},${cy-R} A${R},${R} 0 1,1 ${cx-0.01},${cy-R} L${cx-0.01},${cy-iR} A${iR},${iR} 0 1,0 ${cx},${cy-iR} Z" fill="var(--surf2)" stroke="var(--border)" stroke-width="1.5" opacity="0.6" />
       <text x="${cx}" y="${cy}" class="pie-center-text" font-size="10" fill="var(--dim)" font-family="'JetBrains Mono',monospace">NO DATA</text>
     `;
-    document.getElementById(legId).innerHTML = slices.map(sl=>`
-      <div class="pie-leg-item" style="opacity: 0.35;">
-        <div class="pie-dot" style="background:${sl.color}"></div>
-        <div class="pie-leg-label">${sl.label}</div>
-        <div class="pie-leg-val">0</div>
-      </div>`).join('');
+    const legEl = document.getElementById(legId);
+    if (legEl) {
+      legEl.innerHTML = slices.length > 0 ? slices.map(sl=>`
+        <div class="pie-leg-item" style="opacity: 0.35;">
+          <div class="pie-dot" style="background:${sl.color}"></div>
+          <div class="pie-leg-label">${sl.label}</div>
+          <div class="pie-leg-val">0</div>
+        </div>`).join('') : '';
+    }
     return;
   }
 
@@ -1775,7 +1948,6 @@ function drawPieChart(svgId, legId, slices){
     </div>`).join('');
 }
 
-
 // ── DRAW GRAPH & INTERACTION (TOUCH & HOVER) ────────────────────────────────────────────────
 function drawChart(svgId,start,balArr,ret,W,H){
   const PAD=14;
@@ -1787,7 +1959,7 @@ function drawChart(svgId,start,balArr,ret,W,H){
   const by=b=>H-PAD-((b-minB)/rng)*(H-PAD*2);
   
   let grid='';
-  for(let i=0;i<=4;i++){
+  for(let i=0; i<=4; i++){
     const y=PAD+(i/4)*(H-PAD*2),v=maxB-(i/4)*rng;
     grid+=`<line x1="${PAD}" y1="${y}" x2="${W-PAD}" y2="${y}" stroke="#1f2430" stroke-width="1"/>`;
     grid+=`<text x="${PAD+2}" y="${y-3}" fill="#3a4455" font-size="9" font-family="monospace">$${v>=10000?(v/1000).toFixed(0)+'k':v.toFixed(0)}</text>`;
@@ -1797,7 +1969,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
   let line = '';
   
   if (n === 0) {
-    // Draw flat horizontal baseline if no trades are present
     const y = by(start);
     fill = `M${bx(0)},${y} L${W-PAD},${y} L${W-PAD},${H-PAD} L${bx(0)},${H-PAD} Z`;
     line = `M${bx(0)},${y} L${W-PAD},${y}`;
@@ -1810,12 +1981,11 @@ function drawChart(svgId,start,balArr,ret,W,H){
     bals.forEach((b,i)=>{line+=` L${bx(i)},${by(b)}`;});
   }
   
-  const lc=ret>=0?'#00e676':'#ff1744';
+  const lc=ret>=0?'var(--green)':'var(--red)';
   const sy=by(start);
   const final=bals[bals.length-1];
   const uid=svgId.replace('-','');
 
-  // Interactive cyber tracker layout
   const trackerId = svgId + '-tracker';
   const trackerHTML = `
     <g id="${trackerId}" style="display: none; pointer-events: none;">
@@ -1863,7 +2033,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
     isJournal: svgId === 'j-svg'
   };
 
-  // Add listeners for crosshair events
   if(!svgEl.dataset.listened) {
     svgEl.dataset.listened = "true";
 
@@ -1873,8 +2042,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
 
       const rect = svgEl.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      
-      // Hitung koordinat X relatif dalam sistem 900px
       const xInSvg = ((clientX - rect.left) / rect.width) * 900;
       if(xInSvg < PAD || xInSvg > 900 - PAD) return;
 
@@ -1886,7 +2053,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
       const xPos = data.bx(i);
       const yPos = data.by(bal);
 
-      // Kemas kini HUD tracker dalam SVG
       const tracker = document.getElementById(data.trackerId);
       if(tracker) {
         tracker.style.display = 'block';
@@ -1902,7 +2068,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
         }
       }
 
-      // Kemas kini kedudukan & kandungan HUD Tooltip terapung
       if(data.tooltip) {
         data.tooltip.style.display = 'block';
         const leftPct = (xPos / 900) * 100;
@@ -1915,6 +2080,7 @@ function drawChart(svgId,start,balArr,ret,W,H){
         if(data.isJournal && i > 0 && jTrades[i-1]) {
           const t = jTrades[i-1];
           const change = ((bal - data.start) / data.start) * 100;
+          const timeLabel = t.time ? ` · ${t.time}` : '';
           
           if (t.type === 'WD') {
             content = `
@@ -1924,15 +2090,16 @@ function drawChart(svgId,start,balArr,ret,W,H){
             `;
           } else {
             const winStr = t.win ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
+            const posType = t.positionType || 'LONG';
+            const posColor = posType === 'LONG' ? 'var(--accent)' : 'var(--gold)';
             content = `
-              <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}: ${t.pair}</div>
-              <div>Outcome: ${winStr}</div>
+              <div style="font-weight:700;color:var(--accent);margin-bottom:3px;font-size:12px;">TRADE #${i}: ${t.pair} <span style="color:${posColor}">(${posType})</span></div>
+              <div>Outcome: ${winStr} ${timeLabel}</div>
               <div>Balance: <span style="color:var(--accent); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
               <div>ROI: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
             `;
           }
         } else if(!data.isJournal && i > 0) {
-          // Simulation data
           const change = ((bal - data.start) / data.start) * 100;
           const winVal = seq[i-1];
           const winStr = winVal ? '<span style="color:var(--green)">WIN</span>' : '<span style="color:var(--red)">LOSS</span>';
@@ -1943,7 +2110,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
             <div>Return: <span style="color:${change>=0?'var(--green)':'var(--red)'}">${change>=0?'+':''}${change.toFixed(2)}%</span></div>
           `;
         } else {
-          // Point zero / capital
           content = `
             <div style="font-weight:700;color:var(--gold);margin-bottom:3px;font-size:12px;">STARTING CAPITAL</div>
             <div>Balance: <span style="color:var(--text); font-weight:700;">$${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
@@ -1962,7 +2128,6 @@ function drawChart(svgId,start,balArr,ret,W,H){
       if(data.tooltip) data.tooltip.style.display = 'none';
     };
 
-    // Sensor interaksi sentuhan pintar & tetikus
     svgEl.addEventListener('mousemove', handleInteraction);
     svgEl.addEventListener('touchmove', handleInteraction, {passive: true});
     svgEl.addEventListener('touchstart', handleInteraction, {passive: true});
@@ -1971,13 +2136,11 @@ function drawChart(svgId,start,balArr,ret,W,H){
   }
 }
 
-
 // ── DRAW DAILY P&L BAR CHART ──────────────────────────────────────────────
 function drawDailyBarChart(svgId, trades) {
   const svgEl = document.getElementById(svgId);
   if (!svgEl) return;
 
-  // Render elegant placeholder layout if zero daily items exist under the current monthly filter
   if (!trades || trades.length === 0) {
     svgEl.innerHTML = `
       <text x="450" y="85" fill="var(--dim)" font-size="11" font-family="'JetBrains Mono',monospace" text-anchor="middle" letter-spacing="1">
@@ -1987,14 +2150,12 @@ function drawDailyBarChart(svgId, trades) {
     const tracker = document.getElementById(svgId + '-tracker');
     if (tracker) tracker.style.display = 'none';
     
-    // Hide active tooltip
     const wrap = svgEl.parentElement;
     const tooltip = wrap.querySelector('.chart-tooltip');
     if (tooltip) tooltip.style.display = 'none';
     return;
   }
 
-  // Group trades by date and compute consolidated daily statistics
   const dailyData = {};
   trades.forEach(t => {
     const d = t.date || today();
@@ -2007,7 +2168,6 @@ function drawDailyBarChart(svgId, trades) {
     else dailyData[d].losses++;
   });
 
-  // Sort dates chronologically
   const sortedDates = Object.keys(dailyData).sort();
   const rawChartData = sortedDates.map(d => ({
     date: d,
@@ -2025,7 +2185,6 @@ function drawDailyBarChart(svgId, trades) {
 
   const valToY = val => zeroY - (val / maxAbs) * (zeroY - PAD_Y);
 
-  // Generate background grid lines & labels
   let grid = '';
   const gridLevels = [maxAbs, maxAbs / 2, 0, -maxAbs / 2, -maxAbs];
   gridLevels.forEach(v => {
@@ -2042,8 +2201,8 @@ function drawDailyBarChart(svgId, trades) {
   });
 
   const totalBars = rawChartData.length;
-  const plottingAreaWidth = W - PAD_X - 14;
-  const stepWidth = plottingAreaWidth / totalBars;
+  const plottedAreaWidth = W - PAD_X - 14;
+  const stepWidth = plottedAreaWidth / totalBars;
   const barWidth = Math.max(3, stepWidth * 0.65);
 
   let barsHTML = '';
@@ -2107,7 +2266,6 @@ function drawDailyBarChart(svgId, trades) {
 
       const rect = svgEl.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      
       const xInSvg = ((clientX - rect.left) / rect.width) * 900;
       if (xInSvg < PAD_X || xInSvg > 900 - 14) return;
 
@@ -2165,7 +2323,6 @@ function drawDailyBarChart(svgId, trades) {
   }
 }
 
-
 function renderStreaks(elId,maxWS,maxLS,trades){
   const allS=[];let cT=null,cC=0;
   trades.forEach(t=>{
@@ -2204,31 +2361,18 @@ function renderStreaks(elId,maxWS,maxLS,trades){
 // ═══════════════════════════════════════════════
 loadJ();
 try {
-  const savedSCap = localStorage.getItem('cs_s_cap');
+  const savedSCap = localStorage.getItem('cs_s_cap_nolev_empty');
   if (savedSCap !== null) {
     document.getElementById('s-cap').value = savedSCap;
   }
 } catch(e) {}
 selectOutcome('WIN');
+selectPositionType('LONG');
 document.getElementById('j-date').value=today();
-document.getElementById('j-tlev').value=document.getElementById('j-lev').value;
+document.getElementById('j-time').value=nowTime();
 refreshJournal();
 applyWR();
 updateEV();
 </script>
-
-<!-- MODAL: Full Screen Screenshot Viewer -->
-<div class="modal-overlay" id="screenshot-modal" onclick="closeScreenshotModalClick(event)">
-  <div class="modal" style="max-width: 800px; padding: 20px; background: var(--surf); border: 1.5px solid var(--border);">
-    <div class="modal-title">
-      <span>Chart Screenshot</span>
-      <button class="modal-close" onclick="closeScreenshotModal()">✕</button>
-    </div>
-    <div style="width: 100%; display: flex; justify-content: center; align-items: center; background: #05070a; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
-      <img id="modal-screenshot-img" src="" style="max-width: 100%; max-height: 70vh; object-fit: contain; display: block;" alt="Chart Screenshot" />
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
