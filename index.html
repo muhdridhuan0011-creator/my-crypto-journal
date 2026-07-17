@@ -400,7 +400,11 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
       </div>
       <div class="inp-g">
         <div class="inp-lbl">💱 Pair</div>
-        <input class="ti" id="j-pair" type="text" placeholder="BTC/USDT" autocomplete="off" style="text-transform:uppercase">
+        <select class="ti" id="j-pair">
+          <option value="SOL/USDT">SOL/USDT</option>
+          <option value="XRP/USDT">XRP/USDT</option>
+          <option value="DOGE/USDT">DOGE/USDT</option>
+        </select>
       </div>
       <div class="inp-g">
         <div class="inp-lbl">🌐 Market Session</div>
@@ -548,10 +552,10 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Session & Psychology Analytics Breakdown -->
+  <!-- Session, Position, Pair & Psychology Analytics Breakdown -->
   <div class="chart-sec" id="j-analytics-sec">
-    <div class="chart-title">📊 Session, Position & Psychology Analytics</div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+    <div class="chart-title">📊 Session, Position, Pair & Psychology Analytics</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
       <!-- Card 1: Market Session -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Market Session Performance</div>
@@ -562,7 +566,12 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="pie-title" style="margin-bottom: 8px;">Position Type Performance</div>
         <div id="j-position-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
-      <!-- Card 3: Psychology Losses -->
+      <!-- Card 3: Pair Performance (New requested section) -->
+      <div class="pie-card" style="align-items: stretch; gap: 8px;">
+        <div class="pie-title" style="margin-bottom: 8px;">Pair Win Rate Performance</div>
+        <div id="j-pair-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      <!-- Card 4: Psychology Losses -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Primary Loss Reasons (Psychology)</div>
         <div id="j-psychology-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
@@ -910,7 +919,7 @@ function addTrade(){
   const sl=Math.max(0.001,Math.min(100,gv('j-sl')))/100;
   const date=gs('j-date')||today();
   const time=gs('j-time')||nowTime();
-  const pair=(gs('j-pair')||'UNKNOWN').toUpperCase();
+  const pair=document.getElementById('j-pair').value;
   const note=gs('j-note');
   const win=selOutcome==='WIN';
   const positionType = selPositionType || 'LONG';
@@ -949,11 +958,11 @@ function addTrade(){
   });
   saveJ();
 
-  document.getElementById('j-pair').value='';
   document.getElementById('j-note').value='';
   document.getElementById('j-date').value=today();
   document.getElementById('j-time').value=nowTime();
   document.getElementById('j-loss-reason').value='';
+  document.getElementById('j-pair').selectedIndex = 0;
   selectPositionType('LONG');
   
   document.getElementById('j-screenshot').value = '';
@@ -1052,6 +1061,7 @@ function refreshJournal(){
     
     document.getElementById('j-session-stats-container').innerHTML = '';
     document.getElementById('j-position-stats-container').innerHTML = '';
+    document.getElementById('j-pair-stats-container').innerHTML = '';
     document.getElementById('j-psychology-stats-container').innerHTML = '';
     document.getElementById('j-streaks').innerHTML = '';
     
@@ -1078,6 +1088,11 @@ function refreshJournal(){
     "Revenge Market": 0,
     "SOP Mistake / Human Error": 0
   };
+  const pairData = {
+    "SOL/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
+    "XRP/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
+    "DOGE/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 }
+  };
   
   let longTradesCount = 0;
   let longWinsCount = 0;
@@ -1102,6 +1117,14 @@ function refreshJournal(){
         if (t.win) sesData[s].wins++;
         else sesData[s].losses++;
         sesData[s].pnl += pnl;
+      }
+
+      const pKey = t.pair;
+      if (pairData[pKey]) {
+        pairData[pKey].count++;
+        if (t.win) pairData[pKey].wins++;
+        else pairData[pKey].losses++;
+        pairData[pKey].pnl += pnl;
       }
       
       const posType = t.positionType || 'LONG';
@@ -1281,6 +1304,37 @@ function refreshJournal(){
     </div>
   `;
   document.getElementById('j-position-stats-container').innerHTML = positionHTML;
+
+  let pairHTML = '';
+  Object.keys(pairData).forEach(pKey => {
+    const pRecord = pairData[pKey];
+    const wr = pRecord.count > 0 ? ((pRecord.wins / pRecord.count) * 100).toFixed(0) : 0;
+    const pnlColor = pRecord.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const pnlSign = pRecord.pnl >= 0 ? '+' : '';
+    const wrColor = wr >= 50 ? 'var(--green)' : 'var(--red)';
+    const barColor = wr >= 50 ? 'var(--green)' : 'var(--red)';
+
+    pairHTML += `
+      <div style="background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text);">${pKey}</span>
+            <span style="font-size: 9px; color: var(--dim); margin-left: 4px;">(${pRecord.wins}W / ${pRecord.losses}L)</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: ${pnlColor};">
+            ${pnlSign}$${pRecord.pnl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;">
+            <div style="width: ${wr}%; height: 100%; background: ${barColor};"></div>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: ${wrColor}; font-weight: 700; width: 32px; text-align: right;">${wr}%</span>
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById('j-pair-stats-container').innerHTML = pairHTML;
 
   const sortedMistakes = Object.entries(psychCounts).sort((a, b) => b[1] - a[1]);
   let psychHTML = '';
@@ -2376,3 +2430,5 @@ updateEV();
 </script>
 </body>
 </html>
+```
+`eof`
