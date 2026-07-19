@@ -358,7 +358,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 <!-- ════════════════════════════════════════ -->
 <div class="page active" id="page-j">
 
-  <!-- Account Setup & Withdrawal -->
+  <!-- Account Setup, Withdrawals & Sync -->
   <div class="sec">
     <div class="sec-title">⚙️ Account Management & 💸 Withdrawals</div>
     <div class="grid2">
@@ -366,7 +366,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="inp-lbl">💰 Starting Capital</div>
         <div class="inp-w">
           <span class="inp-pre">$</span>
-          <input class="ni" id="j-cap" type="number" placeholder="Enter Starting Capital (e.g. 100)" min="0.01" step="any" oninput="refreshJournal(); saveJ();">
+          <input class="ni" id="j-cap" type="number" placeholder="Enter Starting Capital (e.g. 100)" min="0.01" step="any" oninput="refreshJournal();" onchange="updateStartingCapital(gv('j-cap'))">
           <span class="inp-suf">USDT</span>
         </div>
         <div class="inp-hint">Please enter starting capital to activate calculations</div>
@@ -381,6 +381,35 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <button class="btn btn-red" onclick="addWithdrawal()" style="padding: 0 16px; font-size: 11px; white-space: nowrap; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; height: 44px;">WD</button>
         </div>
         <div class="inp-hint">Withdraw capital or profits</div>
+      </div>
+    </div>
+
+    <!-- ☁️ CLOUD SYNC SECTION (Cross-device data link) -->
+    <div style="margin-top: 18px; padding-top: 18px; border-top: 1.5px dashed var(--border);">
+      <div class="sec-title" style="color: var(--accent); display: flex; align-items: center; gap: 6px;">
+        <span>☁️ Cloud Sync & Device Link</span>
+        <span class="dot" style="background: var(--accent);"></span>
+      </div>
+      <div class="grid2">
+        <div class="inp-g">
+          <div class="inp-lbl">Your Device Sync ID</div>
+          <div style="display: flex; gap: 8px;">
+            <input class="ti" id="j-sync-id-display" type="text" readonly style="font-family:'JetBrains Mono',monospace; font-size:11px; flex:1; text-align:center; color: var(--accent);" value="Connecting...">
+            <button class="btn btn-accent" onclick="copySyncID()" style="padding:0 12px; height: 38px; font-size: 11px;">Copy</button>
+          </div>
+          <div class="inp-hint">Use this ID on your phone or other PC to share and sync data.</div>
+        </div>
+        <div class="inp-g">
+          <div class="inp-lbl">Link to Another Device</div>
+          <div style="display: flex; gap: 8px;">
+            <input class="ti" id="j-sync-id-input" type="text" placeholder="Enter other device's Sync ID" style="font-family:'JetBrains Mono',monospace; font-size:11px; flex:1; text-align:center;">
+            <button class="btn btn-green" onclick="linkSyncDevice()" style="padding:0 12px; height: 38px; font-size: 11px;">Link</button>
+          </div>
+          <div class="inp-hint">Enter the Sync ID from your primary device here.</div>
+        </div>
+      </div>
+      <div id="j-sync-status-msg" style="margin-top: 12px; font-size:10px; font-family:'JetBrains Mono',monospace; color: var(--dim); text-align: center; border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.2);">
+        Connecting to synchronization server...
       </div>
     </div>
   </div>
@@ -402,7 +431,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="inp-lbl">💱 Pair</div>
         <select class="ti" id="j-pair">
           <option value="SOL/USDT">SOL/USDT</option>
-          <option value="SUI/USDT">SUI/USDT</option>
           <option value="XRP/USDT">XRP/USDT</option>
           <option value="DOGE/USDT">DOGE/USDT</option>
         </select>
@@ -567,7 +595,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="pie-title" style="margin-bottom: 8px;">Position Type Performance</div>
         <div id="j-position-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
-      <!-- Card 3: Pair Performance (New requested section) -->
+      <!-- Card 3: Pair Performance -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Pair Win Rate Performance</div>
         <div id="j-pair-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
@@ -760,6 +788,249 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
+<!-- Firebase Modular Imports for cross-device sync -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Global engine variables
+let db = null;
+let auth = null;
+let appId = 'crypto-compound-app';
+let firebaseEnabled = false;
+let currentSyncId = null;
+
+// Initialize Firebase securely with fail-safes (RULE 1 & 2 & 3 compliant)
+if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+  try {
+    const firebaseConfig = JSON.parse(__firebase_config);
+    appId = typeof __app_id !== 'undefined' ? __app_id : 'crypto-compound-app';
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+    firebaseEnabled = true;
+  } catch (e) {
+    console.error("Firebase initialization failed:", e);
+  }
+}
+
+// Global scope hooks for functions
+window.updateStartingCapital = async function(val) {
+  if (firebaseEnabled && currentSyncId) {
+    const settingsRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'config', 'settings');
+    await setDoc(settingsRef, { startingCapital: val }).catch(e => console.error("Settings save error:", e));
+  } else {
+    try {
+      localStorage.setItem('cs_j_cap_nolev_empty', val);
+    } catch(e){}
+    refreshJournal();
+  }
+}
+
+window.copySyncID = function() {
+  const displayEl = document.getElementById('j-sync-id-display');
+  if (!displayEl || displayEl.value === "Connecting...") return;
+  displayEl.select();
+  document.execCommand('copy');
+  
+  const statusEl = document.getElementById('j-sync-status-msg');
+  const originalHTML = statusEl.innerHTML;
+  statusEl.innerHTML = `<span style="color: var(--accent); font-weight: bold;">✓ SYNC ID COPIED! Paste it in the Phone's Link input.</span>`;
+  setTimeout(() => {
+    statusEl.innerHTML = originalHTML;
+  }, 2500);
+}
+
+window.linkSyncDevice = function() {
+  const inputVal = document.getElementById('j-sync-id-input').value.trim();
+  if (!inputVal) {
+    showConfirm("Please enter a valid Sync ID.", () => {});
+    return;
+  }
+  if (auth && auth.currentUser && inputVal === auth.currentUser.uid) {
+    showConfirm("This is already your current device's Sync ID.", () => {});
+    return;
+  }
+
+  showConfirm("LINK WARNING: This will bind this device to the other device's cloud data. Your current unsaved local entries will be replaced. Confirm?", () => {
+    try {
+      localStorage.setItem('cs_sync_override_id', inputVal);
+      window.location.reload();
+    } catch(e) {}
+  });
+}
+
+window.unlinkSyncDevice = function() {
+  showConfirm("Are you sure you want to unlink? Your device will return to its own unique private sync session.", () => {
+    try {
+      localStorage.removeItem('cs_sync_override_id');
+      window.location.reload();
+    } catch(e) {}
+  });
+}
+
+// Initialise authentication and bind to real-time streams (RULE 3)
+async function initAuthAndSync() {
+  if (!firebaseEnabled) {
+    loadLocalData();
+    updateSyncUI();
+    refreshJournal();
+    return;
+  }
+
+  try {
+    let userCredential;
+    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+      userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+    } else {
+      userCredential = await signInAnonymously(auth);
+    }
+    
+    const user = userCredential.user;
+    if (!user) return; // RULE 3 guard
+
+    // Determine the Sync ID (Local override takes priority for linked setups)
+    let savedOverride = null;
+    try {
+      savedOverride = localStorage.getItem('cs_sync_override_id');
+    } catch(e){}
+    
+    currentSyncId = savedOverride ? savedOverride : user.uid;
+
+    updateSyncUI();
+    setupRealtimeSync();
+
+  } catch (e) {
+    console.error("Auth initialization failed, fallback to local:", e);
+    loadLocalData();
+    updateSyncUI();
+    refreshJournal();
+  }
+}
+
+// Setup real-time listeners for instant cross-device updates (RULE 2 compliant)
+let unsubscribeTrades = null;
+let unsubscribeSettings = null;
+
+function setupRealtimeSync() {
+  if (!firebaseEnabled || !currentSyncId) return;
+
+  if (unsubscribeTrades) unsubscribeTrades();
+  if (unsubscribeSettings) unsubscribeSettings();
+
+  // Listen to Starting Capital changes
+  const settingsRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'config', 'settings');
+  unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data && data.startingCapital !== undefined) {
+        document.getElementById('j-cap').value = data.startingCapital;
+      }
+    }
+    refreshJournal();
+  }, (err) => console.error("Settings sync error:", err));
+
+  // Listen to Trades updates
+  const tradesCol = collection(db, 'artifacts', appId, 'users', currentSyncId, 'trades');
+  unsubscribeTrades = onSnapshot(tradesCol, (querySnapshot) => {
+    const loaded = [];
+    querySnapshot.forEach((doc) => {
+      loaded.push({ id: parseInt(doc.id), ...doc.data() });
+    });
+    // In-memory sort to conform perfectly to RULE 2 (no complex indexes/orderBys)
+    loaded.sort((a, b) => a.id - b.id);
+    jTrades = loaded;
+    refreshJournal();
+  }, (err) => console.error("Trades list sync error:", err));
+}
+
+function updateSyncUI() {
+  const displayEl = document.getElementById('j-sync-id-display');
+  const statusEl = document.getElementById('j-sync-status-msg');
+  if (!displayEl || !statusEl) return;
+
+  if (!firebaseEnabled) {
+    displayEl.value = "OFFLINE_MODE";
+    statusEl.innerHTML = `⚠️ Running in Offline (Local Browser Storage) mode. Setup Firebase to enable cross-device sync.`;
+    return;
+  }
+
+  if (auth && auth.currentUser) {
+    displayEl.value = auth.currentUser.uid;
+  }
+
+  let isOverridden = null;
+  try {
+    isOverridden = localStorage.getItem('cs_sync_override_id');
+  } catch(e){}
+
+  if (isOverridden) {
+    statusEl.innerHTML = `<span style="color: var(--green);">⛓️ LINKED & SYNCED!</span> Your PC and Phone are now fully linked in real-time. <a href="#" onclick="unlinkSyncDevice(); event.preventDefault();" style="color: var(--red); text-decoration: underline; margin-left: 8px;">Disconnect Session</a>`;
+  } else {
+    statusEl.innerHTML = `<span style="color: var(--accent); font-weight: 700;">🌐 CLOUD ACTIVE!</span> Open this app on another device and enter this Sync ID to link them.`;
+  }
+}
+
+// Fallback to local storage if offline
+function loadLocalData() {
+  try{ 
+    const d=localStorage.getItem('csj_v4_nolev'); 
+    if(d) jTrades=JSON.parse(d); 
+  }catch(e){ jTrades=[]; }
+  try{
+    const savedJCap = localStorage.getItem('cs_j_cap_nolev_empty');
+    if(savedJCap !== null) {
+      document.getElementById('j-cap').value = savedJCap;
+    }
+  }catch(e){}
+}
+
+// Make DB operations available globally
+window.dbAddTrade = async function(id, data) {
+  if (firebaseEnabled && currentSyncId) {
+    const tradeRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'trades', id.toString());
+    await setDoc(tradeRef, data).catch(e => console.error("DB Write Trade Error:", e));
+  } else {
+    jTrades.push({ id, ...data });
+    saveJ();
+    refreshJournal();
+  }
+}
+
+window.dbDeleteTrade = async function(id) {
+  if (firebaseEnabled && currentSyncId) {
+    const tradeRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'trades', id.toString());
+    await deleteDoc(tradeRef).catch(e => console.error("DB Delete Trade Error:", e));
+  } else {
+    jTrades = jTrades.filter(t => t.id !== id);
+    saveJ();
+    refreshJournal();
+  }
+}
+
+window.dbClearAllTrades = async function() {
+  if (firebaseEnabled && currentSyncId) {
+    // Delete docs individually to avoid complex composite bulk operators
+    for (const t of jTrades) {
+      const tradeRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'trades', t.id.toString());
+      await deleteDoc(tradeRef).catch(e => console.error(e));
+    }
+  } else {
+    jTrades = [];
+    saveJ();
+    refreshJournal();
+  }
+}
+
+// Run initiation
+window.onload = function () {
+  initAuthAndSync();
+  applyWR();
+  updateEV();
+}
+</script>
+
 <script>
 // ═══════════════════════════════════════════════
 //  TAB SWITCH
@@ -788,18 +1059,6 @@ function saveJ(){
     localStorage.setItem('csj_v4_nolev',JSON.stringify(jTrades)); 
     localStorage.setItem('cs_j_cap_nolev_empty', document.getElementById('j-cap').value);
   }catch(e){} 
-}
-function loadJ(){
-  try{ 
-    const d=localStorage.getItem('csj_v4_nolev'); 
-    if(d) jTrades=JSON.parse(d); 
-  }catch(e){ jTrades=[]; }
-  try{
-    const savedJCap = localStorage.getItem('cs_j_cap_nolev_empty');
-    if(savedJCap !== null) {
-      document.getElementById('j-cap').value = savedJCap;
-    }
-  }catch(e){}
 }
 
 function gv(id){
@@ -902,9 +1161,7 @@ function closeConfirmModalClick(e) {
 
 function clearAll() {
   showConfirm("Are you completely sure you want to delete all logged trade records? This action cannot be undone.", () => {
-    jTrades = [];
-    saveJ();
-    refreshJournal();
+    window.dbClearAllTrades();
   });
 }
 
@@ -940,8 +1197,8 @@ function addTrade(){
   const pnl=win?balBefore*tp:-(balBefore*sl);
   const balAfter=Math.max(0.001,balBefore+pnl);
 
-  jTrades.push({
-    id:Date.now(),
+  const tradeId = Date.now();
+  const tradeData = {
     date,
     time,
     pair,
@@ -956,8 +1213,9 @@ function addTrade(){
     lossReason,
     positionType,
     screenshot: attachedScreenshotBase64
-  });
-  saveJ();
+  };
+
+  window.dbAddTrade(tradeId, tradeData);
 
   document.getElementById('j-note').value='';
   document.getElementById('j-date').value=today();
@@ -970,8 +1228,6 @@ function addTrade(){
   document.getElementById('j-screenshot-preview').style.display = 'none';
   document.getElementById('j-screenshot-preview').src = "";
   attachedScreenshotBase64 = "";
-
-  refreshJournal();
 }
 
 function addWithdrawal() {
@@ -1008,23 +1264,24 @@ function executeWD(amount) {
   if (amount <= 0) return;
   const date = today();
   const time = nowTime();
-  jTrades.push({
-    id: Date.now(),
+  const wdId = Date.now();
+  const wdData = {
     date: date,
     time: time,
     pair: 'WITHDRAWAL',
     type: 'WD',
     wdAmount: amount,
     note: 'Withdrawal of starting capital / profit'
-  });
-  saveJ();
+  };
+
+  if (window.dbAddTrade) {
+    window.dbAddTrade(wdId, wdData);
+  }
   document.getElementById('j-wd-amt').value = '';
-  refreshJournal();
 }
 
 function deleteTrade(id){
-  jTrades=jTrades.filter(t=>t.id!==id);
-  saveJ(); refreshJournal();
+  window.dbDeleteTrade(id);
 }
 
 function refreshJournal(){
@@ -1091,7 +1348,6 @@ function refreshJournal(){
   };
   const pairData = {
     "SOL/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
-    "SUI/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
     "XRP/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
     "DOGE/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 }
   };
@@ -2413,9 +2669,8 @@ function renderStreaks(elId,maxWS,maxLS,trades){
 }
 
 // ═══════════════════════════════════════════════
-//  INIT
+//  INIT DEFAULT FORM STATE
 // ═══════════════════════════════════════════════
-loadJ();
 try {
   const savedSCap = localStorage.getItem('cs_s_cap_nolev_empty');
   if (savedSCap !== null) {
@@ -2426,10 +2681,6 @@ selectOutcome('WIN');
 selectPositionType('LONG');
 document.getElementById('j-date').value=today();
 document.getElementById('j-time').value=nowTime();
-refreshJournal();
-applyWR();
-updateEV();
 </script>
 </body>
 </html>
-
