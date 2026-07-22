@@ -41,6 +41,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',san
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
 .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:12px}
 .grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
 
 /* ── INPUT GROUPS ── */
@@ -418,7 +419,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <div class="sec">
     <div class="sec-title">➕ Log New Trade</div>
 
-    <div class="grid4">
+    <div class="grid5">
       <div class="inp-g">
         <div class="inp-lbl">📅 Date</div>
         <input class="ti" id="j-date" type="date">
@@ -442,6 +443,13 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <option value="Asia">Asia</option>
           <option value="London">London</option>
           <option value="NY">NY</option>
+        </select>
+      </div>
+      <div class="inp-g">
+        <div class="inp-lbl">🎯 Strategy Entry</div>
+        <select class="ti" id="j-strategy">
+          <option value="M1 Trendline Breakout">M1 Trendline Breakout</option>
+          <option value="M5 Trendline Breakout">M5 Trendline Breakout</option>
         </select>
       </div>
     </div>
@@ -582,9 +590,9 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Session, Position, Pair & Psychology Analytics Breakdown -->
+  <!-- Session, Position, Strategy, Pair & Psychology Analytics Breakdown -->
   <div class="chart-sec" id="j-analytics-sec">
-    <div class="chart-title">📊 Session, Position, Pair & Psychology Analytics</div>
+    <div class="chart-title">📊 Session, Position, Strategy, Pair & Psychology Analytics</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
       <!-- Card 1: Market Session -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
@@ -596,12 +604,17 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="pie-title" style="margin-bottom: 8px;">Position Type Performance</div>
         <div id="j-position-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
-      <!-- Card 3: Pair Performance -->
+      <!-- Card 3: Strategy Entry Performance -->
+      <div class="pie-card" style="align-items: stretch; gap: 8px;">
+        <div class="pie-title" style="margin-bottom: 8px;">Strategy Win Rate Performance</div>
+        <div id="j-strategy-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      <!-- Card 4: Pair Performance -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Pair Win Rate Performance</div>
         <div id="j-pair-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
-      <!-- Card 4: Psychology Losses -->
+      <!-- Card 5: Psychology Losses -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Primary Loss Reasons (Psychology)</div>
         <div id="j-psychology-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
@@ -802,7 +815,7 @@ let appId = 'crypto-compound-app';
 let firebaseEnabled = false;
 let currentSyncId = null;
 
-// Initialize Firebase securely with fail-safes (RULE 1 & 2 & 3 compliant)
+// Initialize Firebase securely with fail-safes
 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
   try {
     const firebaseConfig = JSON.parse(__firebase_config);
@@ -871,7 +884,7 @@ window.unlinkSyncDevice = function() {
   });
 }
 
-// Initialise authentication and bind to real-time streams (RULE 3)
+// Initialise authentication and bind to real-time streams
 async function initAuthAndSync() {
   if (!firebaseEnabled) {
     loadLocalData();
@@ -889,9 +902,8 @@ async function initAuthAndSync() {
     }
     
     const user = userCredential.user;
-    if (!user) return; // RULE 3 guard
+    if (!user) return;
 
-    // Determine the Sync ID (Local override takes priority for linked setups)
     let savedOverride = null;
     try {
       savedOverride = localStorage.getItem('cs_sync_override_id');
@@ -910,7 +922,6 @@ async function initAuthAndSync() {
   }
 }
 
-// Setup real-time listeners for instant cross-device updates (RULE 2 compliant)
 let unsubscribeTrades = null;
 let unsubscribeSettings = null;
 
@@ -920,7 +931,6 @@ function setupRealtimeSync() {
   if (unsubscribeTrades) unsubscribeTrades();
   if (unsubscribeSettings) unsubscribeSettings();
 
-  // Listen to Starting Capital changes
   const settingsRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'config', 'settings');
   unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
     if (docSnap.exists()) {
@@ -932,14 +942,12 @@ function setupRealtimeSync() {
     refreshJournal();
   }, (err) => console.error("Settings sync error:", err));
 
-  // Listen to Trades updates
   const tradesCol = collection(db, 'artifacts', appId, 'users', currentSyncId, 'trades');
   unsubscribeTrades = onSnapshot(tradesCol, (querySnapshot) => {
     const loaded = [];
     querySnapshot.forEach((doc) => {
       loaded.push({ id: parseInt(doc.id), ...doc.data() });
     });
-    // In-memory sort to conform perfectly to RULE 2 (no complex indexes/orderBys)
     loaded.sort((a, b) => a.id - b.id);
     jTrades = loaded;
     refreshJournal();
@@ -973,7 +981,6 @@ function updateSyncUI() {
   }
 }
 
-// Fallback to local storage if offline
 function loadLocalData() {
   try{ 
     const d=localStorage.getItem('csj_v4_nolev'); 
@@ -987,7 +994,6 @@ function loadLocalData() {
   }catch(e){}
 }
 
-// Make DB operations available globally
 window.dbAddTrade = async function(id, data) {
   if (firebaseEnabled && currentSyncId) {
     const tradeRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'trades', id.toString());
@@ -1012,7 +1018,6 @@ window.dbDeleteTrade = async function(id) {
 
 window.dbClearAllTrades = async function() {
   if (firebaseEnabled && currentSyncId) {
-    // Delete docs individually to avoid complex composite bulk operators
     for (const t of jTrades) {
       const tradeRef = doc(db, 'artifacts', appId, 'users', currentSyncId, 'trades', t.id.toString());
       await deleteDoc(tradeRef).catch(e => console.error(e));
@@ -1024,7 +1029,6 @@ window.dbClearAllTrades = async function() {
   }
 }
 
-// Run initiation
 window.onload = function () {
   initAuthAndSync();
   applyWR();
@@ -1184,6 +1188,7 @@ function addTrade(){
   const positionType = selPositionType || 'LONG';
   
   const session = document.getElementById('j-session').value || 'Asia';
+  const strategy = document.getElementById('j-strategy').value || 'M1 Trendline Breakout';
   const lossReason = !win ? document.getElementById('j-loss-reason').value : '';
 
   let bal=capital;
@@ -1211,6 +1216,7 @@ function addTrade(){
     balAfter,
     note,
     session,
+    strategy,
     lossReason,
     positionType,
     screenshot: attachedScreenshotBase64
@@ -1223,6 +1229,7 @@ function addTrade(){
   document.getElementById('j-time').value=nowTime();
   document.getElementById('j-loss-reason').value='';
   document.getElementById('j-pair').selectedIndex = 0;
+  document.getElementById('j-strategy').selectedIndex = 0;
   selectPositionType('LONG');
   
   document.getElementById('j-screenshot').value = '';
@@ -1293,7 +1300,6 @@ function refreshJournal(){
     monthlySelectedMonth = null;
   }
 
-  // Handle empty or zero starting capital state gracefully
   if (capital <= 0) {
     document.getElementById('j-bal-val').textContent = '⚠️ Set Capital';
     document.getElementById('j-bal-sub').textContent = 'Please enter Starting Capital above to activate dashboard.';
@@ -1320,6 +1326,7 @@ function refreshJournal(){
     
     document.getElementById('j-session-stats-container').innerHTML = '';
     document.getElementById('j-position-stats-container').innerHTML = '';
+    document.getElementById('j-strategy-stats-container').innerHTML = '';
     document.getElementById('j-pair-stats-container').innerHTML = '';
     document.getElementById('j-psychology-stats-container').innerHTML = '';
     document.getElementById('j-streaks').innerHTML = '';
@@ -1340,6 +1347,10 @@ function refreshJournal(){
     Asia: { wins: 0, losses: 0, pnl: 0 },
     London: { wins: 0, losses: 0, pnl: 0 },
     NY: { wins: 0, losses: 0, pnl: 0 }
+  };
+  const strategyData = {
+    "M1 Trendline Breakout": { wins: 0, losses: 0, pnl: 0, count: 0 },
+    "M5 Trendline Breakout": { wins: 0, losses: 0, pnl: 0, count: 0 }
   };
   const psychCounts = {
     "FOMO / Chasing Price": 0,
@@ -1378,6 +1389,15 @@ function refreshJournal(){
         else sesData[s].losses++;
         sesData[s].pnl += pnl;
       }
+
+      const stKey = t.strategy || 'M1 Trendline Breakout';
+      if (!strategyData[stKey]) {
+        strategyData[stKey] = { wins: 0, losses: 0, pnl: 0, count: 0 };
+      }
+      strategyData[stKey].count++;
+      if (t.win) strategyData[stKey].wins++;
+      else strategyData[stKey].losses++;
+      strategyData[stKey].pnl += pnl;
 
       const pKey = t.pair;
       if (pairData[pKey]) {
@@ -1457,8 +1477,8 @@ function refreshJournal(){
   }
 
   document.getElementById('j-stats').innerHTML=[
-    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,  sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
-    {label:'Win Rate',        value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                         cls:'blue'},
+    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,   sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
+    {label:'Win Rate',        value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                          cls:'blue'},
     {label:'Long / Short WR', value:`${longWinRate.toFixed(0)}% / ${shortWinRate.toFixed(0)}%`, sub:`L:${longTradesCount} trades · S:${shortTradesCount} trades`, cls:'gold'},
     {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
     {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                  sub:'All-time high',                                  cls:'gold'},
@@ -1564,6 +1584,37 @@ function refreshJournal(){
     </div>
   `;
   document.getElementById('j-position-stats-container').innerHTML = positionHTML;
+
+  let strategyHTML = '';
+  Object.keys(strategyData).forEach(sKey => {
+    const sRecord = strategyData[sKey];
+    const wr = sRecord.count > 0 ? ((sRecord.wins / sRecord.count) * 100).toFixed(1) : '0.0';
+    const pnlColor = sRecord.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const pnlSign = sRecord.pnl >= 0 ? '+' : '';
+    const wrColor = parseFloat(wr) >= 50 ? 'var(--green)' : 'var(--red)';
+    const barColor = parseFloat(wr) >= 50 ? 'var(--green)' : 'var(--red)';
+
+    strategyHTML += `
+      <div style="background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text);">${sKey}</span>
+            <span style="font-size: 9px; color: var(--dim); margin-left: 4px;">(${sRecord.wins}W / ${sRecord.losses}L)</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: ${pnlColor};">
+            ${pnlSign}$${sRecord.pnl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;">
+            <div style="width: ${wr}%; height: 100%; background: ${barColor};"></div>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: ${wrColor}; font-weight: 700; white-space: nowrap;">Purata WR: ${wr}%</span>
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById('j-strategy-stats-container').innerHTML = strategyHTML;
 
   let pairHTML = '';
   Object.keys(pairData).forEach(pKey => {
@@ -1673,6 +1724,7 @@ function renderHistoryList(comp) {
       const pStr=(t.pnl>=0?'+':'')+`$${t.pnl.toFixed(2)}`;
       const pCol=t.win?'var(--green)':'var(--red)';
       const sessionLabel = t.session ? ` · ${t.session}` : ' · Asia';
+      const strategyLabel = t.strategy ? ` · ${t.strategy}` : ' · M1 Trendline Breakout';
       const tagLabel = (!t.win && t.lossReason) ? ` · <span style="color:var(--red); font-size:9px;">[${t.lossReason}]</span>` : '';
       
       const posType = t.positionType || 'LONG';
@@ -1694,7 +1746,7 @@ function renderHistoryList(comp) {
             ${posBadge}
             ${screenshotIcon}
           </div>
-          <div class="ti-meta">${dateFmt}${timeFmt} · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
+          <div class="ti-meta">${dateFmt}${timeFmt}${strategyLabel} · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
         </div>
         <div>
           <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
@@ -1880,6 +1932,7 @@ function showDetail(id){
     const detailsGrid = [
       ['Date', t.date || '—'], ['Time', t.time || '—'], ['Pair', t.pair],
       ['Position Type', t.positionType || 'LONG'],
+      ['Strategy Entry', t.strategy || 'M1 Trendline Breakout'],
       ['Outcome', t.win ? 'WIN' : 'LOSS'],
       ['Take Profit', (t.tp * 100).toFixed(1) + '%'], ['Stop Loss', (t.sl * 100).toFixed(1) + '%'],
       ['Market Session', t.session || 'Asia'],
@@ -1888,7 +1941,7 @@ function showDetail(id){
     ];
 
     if (!t.win && t.lossReason) {
-      detailsGrid.splice(7, 0, ['Loss Reason', t.lossReason]);
+      detailsGrid.splice(8, 0, ['Loss Reason', t.lossReason]);
     }
     
     if (t.screenshot) {
@@ -1936,7 +1989,7 @@ function closeScreenshotModalClick(e) {
 function exportCSV(){
   const capital = gv('j-cap');
   let bal=capital;
-  let rows=[['#','Date','Time','Pair','Position Type','Outcome','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
+  let rows=[['#','Date','Time','Pair','Position Type','Strategy','Outcome','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
   jTrades.forEach((t,i)=>{
     const bb=bal;
     let pnl = 0;
@@ -1944,6 +1997,7 @@ function exportCSV(){
     let tpStr = '';
     let slStr = '';
     let sessionStr = '';
+    let strategyStr = '';
     let lossReasonStr = '';
     let screenshotStatus = 'No';
     let posTypeStr = '';
@@ -1959,6 +2013,7 @@ function exportCSV(){
       tpStr = (t.tp*100).toFixed(1)+'%';
       slStr = (t.sl*100).toFixed(1)+'%';
       sessionStr = t.session || 'Asia';
+      strategyStr = t.strategy || 'M1 Trendline Breakout';
       lossReasonStr = !t.win ? (t.lossReason || '') : '';
       screenshotStatus = t.screenshot ? 'Yes' : 'No';
       posTypeStr = t.positionType || 'LONG';
@@ -1970,6 +2025,7 @@ function exportCSV(){
       t.time || '—',
       t.pair,
       posTypeStr,
+      strategyStr,
       outcome,
       tpStr,
       slStr,
@@ -2105,7 +2161,6 @@ function runSim(){
         ⚠️ PLEASE SPECIFY SIMULATOR CAPITAL ABOVE TO RUN MONTE CARLO SIMULATIONS
       </div>`;
     
-    // Hide simulator graphics
     document.getElementById('s-chart').style.display='none';
     document.getElementById('s-pie').style.display='none';
     document.getElementById('s-tbl').style.display='none';
@@ -2155,8 +2210,8 @@ function runSim(){
   ]);
 
   document.getElementById('s-stats').innerHTML=[
-    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                  sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
-    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,            sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
+    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                 sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
+    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,                sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
     {label:'Actual Win Rate', value:`${actWR}%`,                                     sub:`${wins}W / ${losses}L`,            cls:'blue'},
     {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,                         sub:'From peak equity',                 cls:'red'},
     {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                          sub:'All-time high',                    cls:'gold'},
