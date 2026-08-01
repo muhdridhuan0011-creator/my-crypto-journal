@@ -339,7 +339,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="hdr">
   <div class="hdr-ico">📈</div>
   <div>
@@ -419,7 +418,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
   <div class="sec">
     <div class="sec-title">➕ Log New Trade</div>
 
-    <div class="grid5">
+    <div class="grid4">
       <div class="inp-g">
         <div class="inp-lbl">📅 Date</div>
         <input class="ti" id="j-date" type="date">
@@ -445,23 +444,23 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <option value="NY">NY</option>
         </select>
       </div>
-      <div class="inp-g">
-        <div class="inp-lbl">🎯 Strategy Entry</div>
-        <select class="ti" id="j-strategy">
-          <option value="M1 Trendline Breakout">M1 Trendline Breakout</option>
-          <option value="M5 Trendline Breakout">M5 Trendline Breakout</option>
-        </select>
-      </div>
     </div>
 
+    <!-- Before & After Screenshots -->
     <div class="grid2" style="margin-top: 12px; margin-bottom: 12px;">
       <div class="inp-g">
-        <div class="inp-lbl">📷 Entry Chart Screenshot</div>
+        <div class="inp-lbl">📷 Before Entry Chart</div>
         <div style="display: flex; align-items: center; gap: 12px;">
-          <input class="ti" id="j-screenshot" type="file" accept="image/*" onchange="handleScreenshotSelect(event)" style="padding: 8px 10px; font-size: 11px; flex: 1;">
-          <img id="j-screenshot-preview" style="display: none; width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border);" alt="Preview"/>
+          <input class="ti" id="j-screenshot-before" type="file" accept="image/*" onchange="handleScreenshotSelect(event, 'before')" style="padding: 8px 10px; font-size: 11px; flex: 1;">
+          <img id="j-screenshot-preview-before" style="display: none; width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border);" alt="Preview"/>
         </div>
-        <div class="inp-hint">Attach screenshot for performance tracking</div>
+      </div>
+      <div class="inp-g">
+        <div class="inp-lbl">📷 After Exit Chart</div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input class="ti" id="j-screenshot-after" type="file" accept="image/*" onchange="handleScreenshotSelect(event, 'after')" style="padding: 8px 10px; font-size: 11px; flex: 1;">
+          <img id="j-screenshot-preview-after" style="display: none; width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border);" alt="Preview"/>
+        </div>
       </div>
     </div>
 
@@ -481,18 +480,6 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
           <button class="ob" id="ob-short" onclick="selectPositionType('SHORT')">🔴 SHORT</button>
         </div>
       </div>
-    </div>
-
-    <!-- Conditionally visible Psychology Tag (Loss Reason) -->
-    <div class="inp-g" id="j-loss-reason-container" style="display:none; margin-bottom: 12px;">
-      <div class="inp-lbl">🧠 Loss Reason / Psychology Tag</div>
-      <select class="ti" id="j-loss-reason">
-        <option value="">-- Select Reason --</option>
-        <option value="FOMO / Chasing Price">[FOMO / Chasing Price]</option>
-        <option value="Valid Fakeout">[Valid Fakeout]</option>
-        <option value="Revenge Market">[Revenge Market]</option>
-        <option value="SOP Mistake / Human Error">[SOP Mistake / Human Error]</option>
-      </select>
     </div>
 
     <div class="grid2">
@@ -572,7 +559,7 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Monthly P&L Grid (Kotak Kotak Kecil) -->
+  <!-- Monthly P&L Grid -->
   <div class="chart-sec" id="j-monthly-chart">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
       <div class="chart-title" style="margin:0">📅 Monthly P&L Grid</div>
@@ -590,9 +577,9 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- Session, Position, Strategy, Pair & Psychology Analytics Breakdown -->
+  <!-- Session, Position, Pair Analytics Breakdown -->
   <div class="chart-sec" id="j-analytics-sec">
-    <div class="chart-title">📊 Session, Position, Strategy, Pair & Psychology Analytics</div>
+    <div class="chart-title">📊 Session, Position & Pair Analytics</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
       <!-- Card 1: Market Session -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
@@ -604,20 +591,10 @@ tbody tr:hover{background:rgba(255,255,255,0.02)}
         <div class="pie-title" style="margin-bottom: 8px;">Position Type Performance</div>
         <div id="j-position-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
-      <!-- Card 3: Strategy Entry Performance -->
-      <div class="pie-card" style="align-items: stretch; gap: 8px;">
-        <div class="pie-title" style="margin-bottom: 8px;">Strategy Win Rate Performance</div>
-        <div id="j-strategy-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
-      </div>
-      <!-- Card 4: Pair Performance -->
+      <!-- Card 3: Pair Performance -->
       <div class="pie-card" style="align-items: stretch; gap: 8px;">
         <div class="pie-title" style="margin-bottom: 8px;">Pair Win Rate Performance</div>
         <div id="j-pair-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
-      </div>
-      <!-- Card 5: Psychology Losses -->
-      <div class="pie-card" style="align-items: stretch; gap: 8px;">
-        <div class="pie-title" style="margin-bottom: 8px;">Primary Loss Reasons (Psychology)</div>
-        <div id="j-psychology-stats-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
     </div>
   </div>
@@ -1075,12 +1052,16 @@ function gv(id){
 function gs(id){ return document.getElementById(id).value.trim(); }
 
 // ── SCREENSHOT FILE LOADING & BASE64 ENCODING ────────────────────────────
-let attachedScreenshotBase64 = "";
-function handleScreenshotSelect(event) {
+let attachedScreenshotBeforeBase64 = "";
+let attachedScreenshotAfterBase64 = "";
+
+function handleScreenshotSelect(event, type) {
   const file = event.target.files[0];
-  const preview = document.getElementById('j-screenshot-preview');
+  const preview = document.getElementById(`j-screenshot-preview-${type}`);
   if (!file) {
-    attachedScreenshotBase64 = "";
+    if (type === 'before') attachedScreenshotBeforeBase64 = "";
+    else attachedScreenshotAfterBase64 = "";
+    
     preview.style.display = 'none';
     preview.src = "";
     return;
@@ -1110,8 +1091,14 @@ function handleScreenshotSelect(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       
-      attachedScreenshotBase64 = canvas.toDataURL('image/jpeg', 0.7);
-      preview.src = attachedScreenshotBase64;
+      if (type === 'before') {
+        attachedScreenshotBeforeBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        preview.src = attachedScreenshotBeforeBase64;
+      } else {
+        attachedScreenshotAfterBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        preview.src = attachedScreenshotAfterBase64;
+      }
+      
       preview.style.display = 'block';
     };
     img.src = e.target.result;
@@ -1133,11 +1120,6 @@ function selectOutcome(o){
   selOutcome=o;
   document.getElementById('ob-w').className='ob'+(o==='WIN'?' win-sel':'');
   document.getElementById('ob-l').className='ob'+(o==='LOSS'?' loss-sel':'');
-  
-  const lrContainer = document.getElementById('j-loss-reason-container');
-  if (lrContainer) {
-    lrContainer.style.display = o === 'LOSS' ? 'block' : 'none';
-  }
 }
 
 function selectPositionType(type){
@@ -1186,10 +1168,7 @@ function addTrade(){
   const note=gs('j-note');
   const win=selOutcome==='WIN';
   const positionType = selPositionType || 'LONG';
-  
   const session = document.getElementById('j-session').value || 'Asia';
-  const strategy = document.getElementById('j-strategy').value || 'M1 Trendline Breakout';
-  const lossReason = !win ? document.getElementById('j-loss-reason').value : '';
 
   let bal=capital;
   for(const t of jTrades){
@@ -1216,10 +1195,9 @@ function addTrade(){
     balAfter,
     note,
     session,
-    strategy,
-    lossReason,
     positionType,
-    screenshot: attachedScreenshotBase64
+    screenshotBefore: attachedScreenshotBeforeBase64,
+    screenshotAfter: attachedScreenshotAfterBase64
   };
 
   window.dbAddTrade(tradeId, tradeData);
@@ -1227,15 +1205,18 @@ function addTrade(){
   document.getElementById('j-note').value='';
   document.getElementById('j-date').value=today();
   document.getElementById('j-time').value=nowTime();
-  document.getElementById('j-loss-reason').value='';
   document.getElementById('j-pair').selectedIndex = 0;
-  document.getElementById('j-strategy').selectedIndex = 0;
   selectPositionType('LONG');
   
-  document.getElementById('j-screenshot').value = '';
-  document.getElementById('j-screenshot-preview').style.display = 'none';
-  document.getElementById('j-screenshot-preview').src = "";
-  attachedScreenshotBase64 = "";
+  document.getElementById('j-screenshot-before').value = '';
+  document.getElementById('j-screenshot-preview-before').style.display = 'none';
+  document.getElementById('j-screenshot-preview-before').src = "";
+  attachedScreenshotBeforeBase64 = "";
+
+  document.getElementById('j-screenshot-after').value = '';
+  document.getElementById('j-screenshot-preview-after').style.display = 'none';
+  document.getElementById('j-screenshot-preview-after').src = "";
+  attachedScreenshotAfterBase64 = "";
 }
 
 function addWithdrawal() {
@@ -1326,9 +1307,7 @@ function refreshJournal(){
     
     document.getElementById('j-session-stats-container').innerHTML = '';
     document.getElementById('j-position-stats-container').innerHTML = '';
-    document.getElementById('j-strategy-stats-container').innerHTML = '';
     document.getElementById('j-pair-stats-container').innerHTML = '';
-    document.getElementById('j-psychology-stats-container').innerHTML = '';
     document.getElementById('j-streaks').innerHTML = '';
     
     drawPieChart('j-pie-wl', 'j-pie-wl-leg', []);
@@ -1348,16 +1327,7 @@ function refreshJournal(){
     London: { wins: 0, losses: 0, pnl: 0 },
     NY: { wins: 0, losses: 0, pnl: 0 }
   };
-  const strategyData = {
-    "M1 Trendline Breakout": { wins: 0, losses: 0, pnl: 0, count: 0 },
-    "M5 Trendline Breakout": { wins: 0, losses: 0, pnl: 0, count: 0 }
-  };
-  const psychCounts = {
-    "FOMO / Chasing Price": 0,
-    "Valid Fakeout": 0,
-    "Revenge Market": 0,
-    "SOP Mistake / Human Error": 0
-  };
+
   const pairData = {
     "SOL/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
     "SUI/USDT": { wins: 0, losses: 0, pnl: 0, count: 0 },
@@ -1371,8 +1341,6 @@ function refreshJournal(){
   let shortTradesCount = 0;
   let shortWinsCount = 0;
   let shortPnL = 0;
-  
-  let activeLossesCount = 0;
 
   for(const t of jTrades){
     const bb=bal;
@@ -1389,15 +1357,6 @@ function refreshJournal(){
         else sesData[s].losses++;
         sesData[s].pnl += pnl;
       }
-
-      const stKey = t.strategy || 'M1 Trendline Breakout';
-      if (!strategyData[stKey]) {
-        strategyData[stKey] = { wins: 0, losses: 0, pnl: 0, count: 0 };
-      }
-      strategyData[stKey].count++;
-      if (t.win) strategyData[stKey].wins++;
-      else strategyData[stKey].losses++;
-      strategyData[stKey].pnl += pnl;
 
       const pKey = t.pair;
       if (pairData[pKey]) {
@@ -1416,13 +1375,6 @@ function refreshJournal(){
         shortTradesCount++;
         shortPnL += pnl;
         if (t.win) shortWinsCount++;
-      }
-      
-      if (!t.win) {
-        activeLossesCount++;
-        if (t.lossReason && psychCounts[t.lossReason] !== undefined) {
-          psychCounts[t.lossReason]++;
-        }
       }
     }
     bal=Math.max(0.001,bal+pnl);
@@ -1477,15 +1429,15 @@ function refreshJournal(){
   }
 
   document.getElementById('j-stats').innerHTML=[
-    {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,   sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
-    {label:'Win Rate',        value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                          cls:'blue'},
+    {label:'Total Return',   value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,   sub:`$${capital.toFixed(0)} → $${(final + totalWithdrawn).toFixed(2)}`, cls:ret>=0?'green':'red'},
+    {label:'Win Rate',       value:`${numTrades > 0 ? (wins/numTrades*100).toFixed(0) : 0}%`,          sub:`${wins}W / ${losses}L`,                          cls:'blue'},
     {label:'Long / Short WR', value:`${longWinRate.toFixed(0)}% / ${shortWinRate.toFixed(0)}%`, sub:`L:${longTradesCount} trades · S:${shortTradesCount} trades`, cls:'gold'},
-    {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
-    {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                  sub:'All-time high',                                  cls:'gold'},
-    {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                               cls:'green'},
-    {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                             cls:'red'},
-    {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                  sub:`Avg Loss: -$${avgL.toFixed(2)}`,                    cls:'green'},
-    {label:'Total Withdrawn', value:`$${totalWithdrawn.toFixed(2)}`,        sub:`${numWD} withdrawals`,                            cls:'red'},
+    {label:'Max Drawdown',   value:`-${maxDD.toFixed(1)}%`,               sub:'From peak equity',                               cls:'red'},
+    {label:'Peak Balance',   value:`$${maxPk.toFixed(2)}`,                 sub:'All-time high',                                 cls:'gold'},
+    {label:'Max Win Streak',  value:`${maxWS}`,                             sub:'Consecutive wins',                             cls:'green'},
+    {label:'Max Loss Streak', value:`${maxLS}`,                             sub:'Consecutive losses',                           cls:'red'},
+    {label:'Avg Win $',       value:`+$${avgW.toFixed(2)}`,                 sub:`Avg Loss: -$${avgL.toFixed(2)}`,                   cls:'green'},
+    {label:'Total Withdrawn', value:`$${totalWithdrawn.toFixed(2)}`,        sub:`${numWD} withdrawals`,                             cls:'red'},
   ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
   drawPieChart('j-pie-wl', 'j-pie-wl-leg', [
@@ -1585,37 +1537,6 @@ function refreshJournal(){
   `;
   document.getElementById('j-position-stats-container').innerHTML = positionHTML;
 
-  let strategyHTML = '';
-  Object.keys(strategyData).forEach(sKey => {
-    const sRecord = strategyData[sKey];
-    const wr = sRecord.count > 0 ? ((sRecord.wins / sRecord.count) * 100).toFixed(1) : '0.0';
-    const pnlColor = sRecord.pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    const pnlSign = sRecord.pnl >= 0 ? '+' : '';
-    const wrColor = parseFloat(wr) >= 50 ? 'var(--green)' : 'var(--red)';
-    const barColor = parseFloat(wr) >= 50 ? 'var(--green)' : 'var(--red)';
-
-    strategyHTML += `
-      <div style="background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <div>
-            <span style="font-size: 11px; font-weight: 700; color: var(--text);">${sKey}</span>
-            <span style="font-size: 9px; color: var(--dim); margin-left: 4px;">(${sRecord.wins}W / ${sRecord.losses}L)</span>
-          </div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: ${pnlColor};">
-            ${pnlSign}$${sRecord.pnl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;">
-            <div style="width: ${wr}%; height: 100%; background: ${barColor};"></div>
-          </div>
-          <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: ${wrColor}; font-weight: 700; white-space: nowrap;">Purata WR: ${wr}%</span>
-        </div>
-      </div>
-    `;
-  });
-  document.getElementById('j-strategy-stats-container').innerHTML = strategyHTML;
-
   let pairHTML = '';
   Object.keys(pairData).forEach(pKey => {
     const pRecord = pairData[pKey];
@@ -1646,43 +1567,6 @@ function refreshJournal(){
     `;
   });
   document.getElementById('j-pair-stats-container').innerHTML = pairHTML;
-
-  const sortedMistakes = Object.entries(psychCounts).sort((a, b) => b[1] - a[1]);
-  let psychHTML = '';
-  if (activeLossesCount === 0) {
-    psychHTML = `
-      <div style="text-align: center; color: var(--dim); font-size: 11px; padding: 24px 0; font-family: 'JetBrains Mono', monospace;">
-        No loss records to analyze 🎉
-      </div>
-    `;
-  } else {
-    sortedMistakes.forEach(([reason, count], idx) => {
-      const percentage = activeLossesCount > 0 ? ((count / activeLossesCount) * 100).toFixed(0) : 0;
-      const isHighest = idx === 0 && count > 0;
-      
-      psychHTML += `
-        <div style="background: var(--surf2); border: 1px solid ${isHighest ? 'rgba(255,23,68,0.3)' : 'var(--border)'}; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="font-size: 11px; font-weight: 700; color: ${isHighest ? 'var(--red)' : 'var(--text)'};">
-              ${isHighest ? '⚠️ ' : ''}${reason}
-            </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--dim);">
-              ${count} times
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;">
-              <div style="width: ${percentage}%; height: 100%; background: ${isHighest ? 'var(--red)' : 'var(--dim)'};"></div>
-            </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; width: 32px; text-align: right; color: var(--dim);">
-              ${percentage}%
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  }
-  document.getElementById('j-psychology-stats-container').innerHTML = psychHTML;
 
   renderStreaks('j-streaks',maxWS,maxLS,comp);
 
@@ -1724,16 +1608,18 @@ function renderHistoryList(comp) {
       const pStr=(t.pnl>=0?'+':'')+`$${t.pnl.toFixed(2)}`;
       const pCol=t.win?'var(--green)':'var(--red)';
       const sessionLabel = t.session ? ` · ${t.session}` : ' · Asia';
-      const strategyLabel = t.strategy ? ` · ${t.strategy}` : ' · M1 Trendline Breakout';
-      const tagLabel = (!t.win && t.lossReason) ? ` · <span style="color:var(--red); font-size:9px;">[${t.lossReason}]</span>` : '';
       
       const posType = t.positionType || 'LONG';
       const posBadgeColor = posType === 'LONG' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 214, 0, 0.15)';
       const posTextColor = posType === 'LONG' ? 'var(--accent)' : 'var(--gold)';
       const posBadge = `<span style="font-size: 8px; padding: 2px 6px; border-radius: 4px; background: ${posBadgeColor}; color: ${posTextColor}; margin-left: 6px; font-weight:700;">${posType}</span>`;
 
-      const screenshotIcon = t.screenshot ? `
-        <svg onclick="event.stopPropagation(); openScreenshotLightbox('${t.screenshot}')" style="cursor: pointer; width: 15px; height: 15px; fill: ${pCol}; margin-left: 6px; vertical-align: middle; transition: transform 0.15s, opacity 0.15s; opacity: 0.85;" onmouseover="this.style.transform='scale(1.2)'; this.style.opacity='1';" onmouseout="this.style.transform='scale(1)'; this.style.opacity='0.85';" viewBox="0 0 24 24" title="View Chart Screenshot">
+      // Fallback for legacy screenshot property mapping to before
+      const hasImg = t.screenshotBefore || t.screenshot || t.screenshotAfter;
+      const targetImg = t.screenshotBefore || t.screenshot || t.screenshotAfter;
+
+      const screenshotIcon = hasImg ? `
+        <svg onclick="event.stopPropagation(); openScreenshotLightbox('${targetImg}')" style="cursor: pointer; width: 15px; height: 15px; fill: ${pCol}; margin-left: 6px; vertical-align: middle; transition: transform 0.15s, opacity 0.15s; opacity: 0.85;" onmouseover="this.style.transform='scale(1.2)'; this.style.opacity='1';" onmouseout="this.style.transform='scale(1)'; this.style.opacity='0.85';" viewBox="0 0 24 24" title="View Chart Screenshot">
           <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
         </svg>
       ` : '';
@@ -1746,7 +1632,7 @@ function renderHistoryList(comp) {
             ${posBadge}
             ${screenshotIcon}
           </div>
-          <div class="ti-meta">${dateFmt}${timeFmt}${strategyLabel} · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${tagLabel}${t.note?' · '+t.note:''}</div>
+          <div class="ti-meta">${dateFmt}${timeFmt} · TP${(t.tp*100).toFixed(0)}% SL${(t.sl*100).toFixed(0)}%${sessionLabel}${t.note?' · '+t.note:''}</div>
         </div>
         <div>
           <div class="ti-pnl" style="color:${pCol}">${pStr}</div>
@@ -1932,22 +1818,24 @@ function showDetail(id){
     const detailsGrid = [
       ['Date', t.date || '—'], ['Time', t.time || '—'], ['Pair', t.pair],
       ['Position Type', t.positionType || 'LONG'],
-      ['Strategy Entry', t.strategy || 'M1 Trendline Breakout'],
       ['Outcome', t.win ? 'WIN' : 'LOSS'],
       ['Take Profit', (t.tp * 100).toFixed(1) + '%'], ['Stop Loss', (t.sl * 100).toFixed(1) + '%'],
       ['Market Session', t.session || 'Asia'],
       ['Bal Before', '$' + balBefore.toFixed(2)], ['P&L', (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2)],
       ['Bal After', '$' + balAfter.toFixed(2)], ['Change', (pnl / balBefore * 100 >= 0 ? '+' : '') + (pnl / balBefore * 100).toFixed(2) + '%'],
     ];
-
-    if (!t.win && t.lossReason) {
-      detailsGrid.splice(8, 0, ['Loss Reason', t.lossReason]);
+    
+    if (t.screenshotBefore || t.screenshot) {
+      detailsGrid.push([
+        'Before Chart', 
+        `<img src="${t.screenshotBefore || t.screenshot}" style="width: 60px; height: 40px; border-radius: 4px; object-fit: cover; border: 1.5px solid var(--border); cursor: pointer;" onclick="openScreenshotLightbox('${t.screenshotBefore || t.screenshot}')" title="Click to view full image"/>`
+      ]);
     }
     
-    if (t.screenshot) {
+    if (t.screenshotAfter) {
       detailsGrid.push([
-        'Chart Screenshot', 
-        `<img src="${t.screenshot}" style="width: 60px; height: 40px; border-radius: 4px; object-fit: cover; border: 1.5px solid var(--border); cursor: pointer;" onclick="openScreenshotLightbox('${t.screenshot}')" title="Click to view full image"/>`
+        'After Chart', 
+        `<img src="${t.screenshotAfter}" style="width: 60px; height: 40px; border-radius: 4px; object-fit: cover; border: 1.5px solid var(--border); cursor: pointer;" onclick="openScreenshotLightbox('${t.screenshotAfter}')" title="Click to view full image"/>`
       ]);
     }
 
@@ -1956,7 +1844,7 @@ function showDetail(id){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
         ${detailsGrid.map(([k,v])=>`<div style="background:var(--surf2);border-radius:8px;padding:11px">
           <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${k}</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${k==='P&L'?(t.win?'var(--green)':'var(--red)'): (k === 'Loss Reason' ? 'var(--red)' : 'var(--text)')}">${v}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${k==='P&L'?(t.win?'var(--green)':'var(--red)'): 'var(--text)'}">${v}</div>
         </div>`).join('')}
       </div>
       ${t.note?`<div style="background:var(--surf2);border-radius:8px;padding:11px;margin-bottom:14px">
@@ -1989,7 +1877,7 @@ function closeScreenshotModalClick(e) {
 function exportCSV(){
   const capital = gv('j-cap');
   let bal=capital;
-  let rows=[['#','Date','Time','Pair','Position Type','Strategy','Outcome','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Loss Reason','Screenshot Attached','Notes']];
+  let rows=[['#','Date','Time','Pair','Position Type','Outcome','TP%','SL%','Bal Before','P&L / WD','Bal After','Change%','Session','Before Chart','After Chart','Notes']];
   jTrades.forEach((t,i)=>{
     const bb=bal;
     let pnl = 0;
@@ -1997,9 +1885,8 @@ function exportCSV(){
     let tpStr = '';
     let slStr = '';
     let sessionStr = '';
-    let strategyStr = '';
-    let lossReasonStr = '';
-    let screenshotStatus = 'No';
+    let screenshotBeforeStatus = 'No';
+    let screenshotAfterStatus = 'No';
     let posTypeStr = '';
 
     if (t.type === 'WD') {
@@ -2013,9 +1900,8 @@ function exportCSV(){
       tpStr = (t.tp*100).toFixed(1)+'%';
       slStr = (t.sl*100).toFixed(1)+'%';
       sessionStr = t.session || 'Asia';
-      strategyStr = t.strategy || 'M1 Trendline Breakout';
-      lossReasonStr = !t.win ? (t.lossReason || '') : '';
-      screenshotStatus = t.screenshot ? 'Yes' : 'No';
+      screenshotBeforeStatus = (t.screenshotBefore || t.screenshot) ? 'Yes' : 'No';
+      screenshotAfterStatus = t.screenshotAfter ? 'Yes' : 'No';
       posTypeStr = t.positionType || 'LONG';
     }
 
@@ -2025,7 +1911,6 @@ function exportCSV(){
       t.time || '—',
       t.pair,
       posTypeStr,
-      strategyStr,
       outcome,
       tpStr,
       slStr,
@@ -2034,8 +1919,8 @@ function exportCSV(){
       bal.toFixed(2),
       (pnl/bb*100).toFixed(2)+'%',
       sessionStr,
-      lossReasonStr,
-      screenshotStatus, 
+      screenshotBeforeStatus,
+      screenshotAfterStatus, 
       t.note||''
     ]);
   });
@@ -2210,13 +2095,13 @@ function runSim(){
   ]);
 
   document.getElementById('s-stats').innerHTML=[
-    {label:'Final Balance',    value:`$${final.toFixed(2)}`,                                 sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
+    {label:'Final Balance',   value:`$${final.toFixed(2)}`,                                sub:`Started $${p.CAP.toFixed(0)}`,     cls:ret>=0?'green':'red'},
     {label:'Total Return',    value:`${ret>=0?'+':''}${ret.toFixed(1)}%`,                sub:`Over ${simN} trades`,              cls:ret>=0?'green':'red'},
-    {label:'Actual Win Rate', value:`${actWR}%`,                                     sub:`${wins}W / ${losses}L`,            cls:'blue'},
+    {label:'Actual Win Rate', value:`${actWR}%`,                                       sub:`${wins}W / ${losses}L`,             cls:'blue'},
     {label:'Max Drawdown',    value:`-${maxDD.toFixed(1)}%`,                         sub:'From peak equity',                 cls:'red'},
     {label:'Peak Balance',    value:`$${maxPk.toFixed(2)}`,                          sub:'All-time high',                    cls:'gold'},
-    {label:'Max Win Streak',  value:`${maxWS}`,                                       sub:'Consecutive wins',                 cls:'green'},
-    {label:'Max Loss Streak', value:`${maxLS}`,                                       sub:'Consecutive losses',                cls:'red'},
+    {label:'Max Win Streak',  value:`${maxWS}`,                                        sub:'Consecutive wins',                 cls:'green'},
+    {label:'Max Loss Streak', value:`${maxLS}`,                                        sub:'Consecutive losses',                cls:'red'},
     {label:'Avg Win / Loss',  value:`+$${avgW.toFixed(2)}`,                          sub:`Avg Loss: -$${avgL.toFixed(2)}`,   cls:'green'},
   ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.label}</div><div class="stat-val ${s.cls}">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
 
